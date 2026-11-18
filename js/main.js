@@ -42,10 +42,9 @@ export async function initLab() {
   }
   const start=()=>{unlockAudio();game.start();hud.update(game);};
   const exit=()=>renderer.xr.getSession()?.end().catch(showError);
-  const hud=createHUD(scene,{start,reset,recover,exit});
+  const hud=createHUD(scene,{start,reset,recover,exit},()=>interaction?.inputStatus() || '');
   interaction=createInteraction({scene,renderer,camera,items,buttons:hud.buttons,occluders,game,canvas:renderer.domElement});reset();
-  // Entry control de 3.1: ahora exige hand-tracking para no ofrecer una sesión sin manos.
-  const vr=VRButton.createButton(renderer,{requiredFeatures:['hand-tracking'],optionalFeatures:['local-floor']});document.getElementById('vr-entry').appendChild(vr);
+  const vr=VRButton.createButton(renderer,{optionalFeatures:['hand-tracking']});document.getElementById('vr-entry').appendChild(vr);
   renderer.xr.addEventListener('sessionstart',()=>{
     interaction.releaseAll();camera.position.set(0,0,0);camera.quaternion.identity();document.body.classList.add('in-vr');
     const session=renderer.xr.getSession();session.addEventListener('visibilitychange',()=>{if(session.visibilityState!=='visible'){interaction.releaseAll();game.pause();}});

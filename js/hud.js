@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CATEGORIES, timeText } from './config.js';
 import { label } from './environment.js';
-export function createHUD(scene,actions) {
+export function createHUD(scene,actions,inputStatus) {
   const group=new THREE.Group();group.position.set(0,1.83,-1.65);scene.add(group);
   const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=650;const ctx=canvas.getContext('2d');
   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
@@ -12,7 +12,8 @@ export function createHUD(scene,actions) {
   });
   let signature='';
   function update(game) {
-    const key=JSON.stringify([game.status,Math.floor(game.elapsed),game.hits,game.errors,game.message]);if(signature===key)return;signature=key;
+    const input=inputStatus();
+    const key=JSON.stringify([input,game.status,Math.floor(game.elapsed),game.hits,game.errors,game.message]);if(signature===key)return;signature=key;
     ctx.fillStyle='#183b4e';ctx.fillRect(0,0,1280,650);ctx.textBaseline='middle';ctx.textAlign='left';
     ctx.fillStyle='#8fe1d2';ctx.font='500 25px system-ui';ctx.fillText('FORMA / LAB    ·    CLASIFICACIÓN GEOMÉTRICA',44,43);
     ctx.fillStyle='#ffffff';ctx.font='600 88px system-ui';ctx.fillText(`${game.hits} / 20`,44,123);
@@ -23,7 +24,7 @@ export function createHUD(scene,actions) {
       ctx.fillStyle='#fff';ctx.fillText(`${game.counts[c.id]} / 5`,620,y);ctx.fillStyle='#bfd2d9';ctx.fillText(game.times[c.id]===null?'Pendiente':timeText(game.times[c.id]),910,y);
     });
     ctx.fillStyle=game.status==='completado'?'#8fe1d2':'#fff1cc';ctx.font='400 25px system-ui';ctx.fillText(game.message,44,558,1192);
-    ctx.fillStyle='#bdd3d9';ctx.font='400 21px system-ui';ctx.fillText('Alonso Ramírez Gutiérrez   ·   Recuperar devuelve piezas caídas a una mesa',44,610);
+    ctx.fillStyle='#bdd3d9';ctx.font='400 21px system-ui';ctx.fillText(input || 'Alonso Ramírez Gutiérrez   ·   Recuperar devuelve piezas caídas a una mesa',44,610);
     tex.needsUpdate=true;
     document.getElementById('score').textContent=`${game.hits}/20 · ${game.errors} errores · ${game.accuracy.toFixed(0)} % · ${timeText(game.elapsed)} · ${game.status}`;
     document.getElementById('feedback').textContent=game.message;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { testXRInput } from './xr-input.js';
 import { CATEGORIES, SETTINGS, stationPoint } from '../js/config.js';
 import { Game } from '../js/game.js';
 import { place, sync, updateRecoveryState } from '../js/physics.js';
@@ -10,6 +11,7 @@ export function runTests({world,items,bins,game,reset,interaction,renderer}) {
   function advance(seconds,score=game){for(let i=0;i<seconds*120;i++){world.step(1/120);score.update(1/120,items,bins,world.contacts);}sync(items);}
   function drop(item,bin,x=0,z=0){game.released(item);place(item,stationPoint(bin.index,x,1.48,z-.02));}
   interaction.releaseAll();reset();
+  check('Entradas XR simuladas: gatillo, pinza, cambio de fuente y pérdida de pose',()=>testXRInput(assert));
   check('20 cuerpos, 5 por categoría y 5 por mesa',()=>{
     assert(items.length===20);for(const c of CATEGORIES)assert(items.filter(i=>i.categoria===c.id).length===5);
     for(let i=0;i<4;i++)assert(items.filter(p=>p.mesaOrigen===i).length===5);
@@ -38,7 +40,7 @@ export function runTests({world,items,bins,game,reset,interaction,renderer}) {
   reset();game.start();
   check('Agarrar bloquea doble selección y libera con cuerpo dinámico',()=>{
     const p=items[0],h=new THREE.Object3D();h.position.copy(p.cuerpoFisico.position);h.updateMatrixWorld(true);sync(items);
-    const a=interaction.states[0],b=interaction.states[1];interaction.press(a,p.malla,h);interaction.press(b,p.malla,h);
+    const a={},b={};interaction.press(a,p.malla,h);interaction.press(b,p.malla,h);
     assert(a.held===p && !b.held && p.estado==='sujeto');interaction.release(a);assert(p.cuerpoFisico.type===CANNON.Body.DYNAMIC && p.cuerpoFisico.mass===.14 && p.estado==='liberado');
   });
   reset();game.start();
@@ -77,7 +79,7 @@ export function runTests({world,items,bins,game,reset,interaction,renderer}) {
   check('Precisión verificada y pausa no suma tiempo',()=>{
     const g=new Game();assert(g.accuracy===0);g.hits=2;g.attempts=5;assert(g.accuracy===40);g.start();g.update(1,[],[],[]);g.pause();g.update(20,[],[],[]);assert(g.elapsed===1);
   });
-  check('Clasificados no se pueden agarrar',()=>{const p=items[0],s=interaction.states[0],h=new THREE.Object3D();interaction.press(s,p.malla,h);assert(!s.held);});
+  check('Clasificados no se pueden agarrar',()=>{const p=items[0],s={},h=new THREE.Object3D();interaction.press(s,p.malla,h);assert(!s.held);});
   check('Reiniciar restaura estados y no crea bodies huérfanos',()=>{
     const count=world.bodies.length;for(let n=0;n<10;n++)reset();assert(world.bodies.length===count);assert(game.hits===0 && game.attempts===0 && game.errors===0 && game.elapsed===0);
     assert(items.every(i=>i.estado==='disponible' && !i.holder && !i.eventos.length));

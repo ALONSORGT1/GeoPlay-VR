@@ -13,6 +13,10 @@ Evolución de [práctica 3.1 Web-VR](https://alonsorgt1.github.io/Web-VR/). El o
 
 ## Ejecutar y publicar
 
+En Meta Quest Browser puedes usar manos o mandos Touch. Al entrar en VR, mira la última línea del panel. Indica la fuente y el lado que WebXR comunica, y si hay seguimiento. Apunta el rayo a **Comenzar** y pellizca o pulsa el gatillo índice. Una vez iniciada la partida, mantén ese gesto para mover una figura y suéltalo para dejarla caer.
+
+Si aparece **Sin entradas XR**, el navegador todavía no comunica una mano o mando con puntero. Si aparece **sin seguimiento** junto a un lado, la fuente está conectada y falta una pose válida. La aplicación detecta los cambios de fuente dentro de la misma sesión. La prueba de navegador simula ambas modalidades y el cambio entre ellas. La comprobación física sigue pendiente.
+
 Abre `index.html` con Live Server de VS Code, o ejecuta `python serve.py` y visita `http://localhost:8080`. No uses `file://`. Python solo ofrece un servidor de archivos para pruebas locales: la aplicación desplegada no necesita servidor propio, instalaciones ni compilación.
 
 Para publicar: en el repositorio, **Settings → Pages → Deploy from a branch → main → /(root) → Save**. El contenido ya está preparado en raíz, con `.nojekyll` y rutas relativas. La configuración final y la comprobación pública se registran en `docs/DESPLIEGUE.md`.
