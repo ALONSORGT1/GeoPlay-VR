@@ -31,9 +31,9 @@ export async function initLab() {
       if(item.holder || !['recuperable','error'].includes(item.estado))continue;
       let free=null;
       for(const s of [item.mesaOrigen,...STATIONS.map((_,i)=>i).filter(i=>i!==item.mesaOrigen)]) {
-        for(const x of [-.25,0,.25]) for(const z of [.29,.48]) {
+        for(const [x,z] of [[-.25,.29],[0,.29],[.25,.29],[-.13,.48],[.13,.48]]) {
           const p=stationPoint(s,x,SETTINGS.tableTop,z);
-          if(!free && obstacles.every(other=>Math.hypot(other.cuerpoFisico.position.x-p.x,other.cuerpoFisico.position.z-p.z)>.18 || other.cuerpoFisico.position.y>1.1))free=p;
+          if(!free && obstacles.every(other=>Math.hypot(other.cuerpoFisico.position.x-p.x,other.cuerpoFisico.position.z-p.z)>other.radius+item.radius+.004 || other.cuerpoFisico.position.y>1.1))free=p;
         }
       }
       if(free){place(item,free);item.estado='disponible';item.confirmed=false;item.stable=0;item.entered=null;item.recipiente=null;item.malla.material.emissiveIntensity=0;obstacles.push(item);recovered++;}
