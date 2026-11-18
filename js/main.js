@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { SETTINGS, STATIONS, stationPoint, localPoint } from './config.js';
-import { createPhysics, createPieces, redistribute, place, sync } from './physics.js';
+import { createPhysics, createPieces, redistribute, place, sync, updateRecoveryState } from './physics.js';
 import { createEnvironment } from './environment.js';
 import { createInteraction } from './interaction.js';
 import { Game } from './game.js';
@@ -74,8 +74,8 @@ export async function initLab() {
             const b=item.cuerpoFisico;
             if(item.holder) {
               for(const bin of bins){const p=localPoint(bin.index,b.position);if(Math.abs(p.x)<SETTINGS.binHalf && Math.abs(p.z+.02)<SETTINGS.binHalf && b.position.y>SETTINGS.binTop+item.radius*.35)item.holder.entered=bin.index;}
-            } else if(item.estado!=='clasificado' && b.position.y<.25){item.estado='recuperable';}
-            if(b.position.y< -1 || Math.abs(b.position.x)>6.5 || Math.abs(b.position.z)>4.5){if(item.holder)interaction.release(item.holder,true);item.estado='recuperable';}
+            }
+            updateRecoveryState(item,interaction.release);
             if(b.velocity.length()>2.4)b.velocity.scale(2.4/b.velocity.length(),b.velocity);
           }
           game.update(SETTINGS.step/2,items,bins,world.contacts,false);

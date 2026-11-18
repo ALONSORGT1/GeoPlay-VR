@@ -30,4 +30,4 @@ Portada y SVG propios; responsive, capacidad XR y carga bajo demanda. Tests repr
 
 ## 7. Publicación
 
-Commit y push al remoto de destino realizados; no se hizo force-push. GitHub Pages necesita configuración de rama. Git tiene autenticación funcional, pero `gh` no tiene sesión y el conector no expone administración de Pages. El navegador controlado se interrumpió, por lo que no se eludieron sus controles. Estado final en `DESPLIEGUE.md`.
+Commit y push al remoto de destino realizados; no se hizo force-push. Git tiene autenticación funcional, pero `gh` no tiene sesión y el conector no expone administración de Pages. El navegador controlado se interrumpió, por lo que no se eludieron sus controles. Posteriormente GitHub informó Pages habilitado y el flujo automático de publicación concluyó correctamente; se comprobó la URL HTTPS real. No se atribuye al agente la habilitación de Pages que no ejecutó ni observó. Estado final en `DESPLIEGUE.md`.

@@ -39,11 +39,11 @@
       "status": 200
     },
     {
-      "url": "http://localhost:8080/js/landing.js",
+      "url": "http://localhost:8080/assets/lab-illustration.svg",
       "status": 200
     },
     {
-      "url": "http://localhost:8080/assets/lab-illustration.svg",
+      "url": "http://localhost:8080/js/landing.js",
       "status": 200
     },
     {
@@ -55,19 +55,11 @@
       "status": 200
     },
     {
-      "url": "http://localhost:8080/js/config.js",
-      "status": 200
-    },
-    {
-      "url": "http://localhost:8080/js/physics.js",
-      "status": 200
-    },
-    {
       "url": "http://localhost:8080/js/environment.js",
       "status": 200
     },
     {
-      "url": "http://localhost:8080/js/interaction.js",
+      "url": "http://localhost:8080/js/config.js",
       "status": 200
     },
     {
@@ -75,7 +67,7 @@
       "status": 200
     },
     {
-      "url": "http://localhost:8080/js/audio.js",
+      "url": "http://localhost:8080/js/interaction.js",
       "status": 200
     },
     {
@@ -83,7 +75,11 @@
       "status": 200
     },
     {
-      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/VRButton.js",
+      "url": "http://localhost:8080/js/audio.js",
+      "status": 200
+    },
+    {
+      "url": "http://localhost:8080/js/physics.js",
       "status": 200
     },
     {
@@ -95,11 +91,15 @@
       "status": 200
     },
     {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/VRButton.js",
+      "status": 200
+    },
+    {
       "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
       "status": 200
     },
     {
-      "url": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/XRHandPrimitiveModel.js",
       "status": 200
     },
     {
@@ -107,7 +107,7 @@
       "status": 200
     },
     {
-      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/XRHandPrimitiveModel.js",
+      "url": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
       "status": 200
     },
     {
@@ -119,11 +119,11 @@
       "status": 200
     },
     {
-      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.core.js",
       "status": 200
     },
     {
-      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.core.js",
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
       "status": 200
     },
     {

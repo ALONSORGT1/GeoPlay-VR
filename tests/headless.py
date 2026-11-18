@@ -2,8 +2,10 @@
 from playwright.sync_api import sync_playwright
 import pathlib,sys,json
 root=pathlib.Path(__file__).resolve().parent.parent
-out=root/'docs'/'evidencias';out.mkdir(parents=True,exist_ok=True)
 url=sys.argv[1] if len(sys.argv)>1 else 'http://localhost:8080/'
+out=root/'docs'/'evidencias'
+if not url.startswith('http://localhost'):out=out/'publico'
+out.mkdir(parents=True,exist_ok=True)
 with sync_playwright() as p:
     browser=p.chromium.launch(channel='msedge',headless=True,args=['--enable-unsafe-swiftshader'])
     page=browser.new_page(viewport={'width':1440,'height':1100},device_scale_factor=1)

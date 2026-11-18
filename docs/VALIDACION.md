@@ -1,6 +1,6 @@
 # Matriz de aceptación · 18/11/2026
 
-La validación automática usa Edge headless/WebGL2 y física cannon-es real. No representa una sesión inmersiva ni seguimiento real de manos. Resultado técnico local: **14/14 pruebas aprobadas**, cero errores de consola, 39 respuestas HTTP sin fallos y sin desbordamiento horizontal a 390 px. Evidencias: [pruebas](evidencias/pruebas.txt), [captura de pruebas](evidencias/pruebas.png), [Network/Console](evidencias/navegador.json), [portada](evidencias/portada.png), [móvil](evidencias/movil.png), [laboratorio](evidencias/laboratorio.png).
+La validación automática usa Edge headless/WebGL2 y física cannon-es real. No representa una sesión inmersiva ni seguimiento real de manos. El registro reproducible está en [pruebas](evidencias/pruebas.txt), [captura de pruebas](evidencias/pruebas.png), [Network/Console](evidencias/navegador.json), [portada](evidencias/portada.png), [móvil](evidencias/movil.png) y [laboratorio](evidencias/laboratorio.png). Las pruebas públicas se guardan por separado en `evidencias/publico/`.
 
 | # | Requisito | Procedimiento | Esperado | Observado / evidencia | Estado |
 |---|---|---|---|---|---|
@@ -16,7 +16,7 @@ La validación automática usa Edge headless/WebGL2 y física cannon-es real. No
 | 10 | Agarre físico y retorno dinámico | Agarrar en el motor y soltar; comprobar exclusividad y masa | Un solo propietario; cuerpo dinámico con masa | Suite del mecanismo dinámico equivalente al cinemático, masa 0,14 kg | APROBADO en escritorio; NO PROBADO EN VISOR |
 | 11 | Acierto estable y sin doble conteo | Depositar, esperar 0,8 s y repetir contactos | Un acierto por pieza | Suite de 20 depósitos; contactos adicionales no suman | APROBADO |
 | 12 | Tres errores | Soltar tres veces una misma pieza en bote incorrecto | Tres errores, tres intentos, cero aciertos | Suite física de tres depósitos y espera adicional | APROBADO |
-| 13 | Recuperación de pieza caída | En partida, dejar caer pieza; pulsar Recuperar | Vuelve a una mesa libre sin cambiar score ni inventario | Implementado con búsqueda de espacios; falta recorrido interactivo completo de recuperación | NO PROBADO |
+| 13 | Recuperación de pieza caída | Simular caída real, ejecutar detector y pulsar Recuperar | Vuelve a una mesa libre sin cambiar score ni inventario | Suite verifica caída, estado recuperable, botón, nuevo apoyo y puntuación idéntica | APROBADO en escritorio; NO PROBADO EN VISOR |
 | 14 | Total y progresos individuales | Completar suite/partida, comparar contadores | 20/20 y cuatro grupos 5/5 | Suite verifica datos del marcador; HUD visible en captura inicial | APROBADO datos; lectura NO PROBADA EN VISOR |
 | 15 | Precisión, intentos y tiempos | Confirmar errores/aciertos, comparar fórmula y tiempos | Sin intentos 0 %, 2/5 = 40 %, tiempos desde inicio | Suite y código: cuatro tiempos >0, último posterior al primero; tiempos no locales por bote | APROBADO lógica |
 | 16 | Fin detiene reloj | Completar veinte y simular más pasos | Tiempo no crece | Suite: estado completado y tiempo invariable | APROBADO |

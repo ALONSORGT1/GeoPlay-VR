@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { CATEGORIES, SETTINGS, stationPoint } from '../js/config.js';
 import { Game } from '../js/game.js';
-import { place, sync } from '../js/physics.js';
+import { place, sync, updateRecoveryState } from '../js/physics.js';
 export function runTests({world,items,bins,game,reset,interaction,renderer}) {
   const output=document.getElementById('test-results');output.hidden=false;const lines=[], results=[];
   function check(name,test){try{test();lines.push(`APROBADO · ${name}`);results.push({name,pass:true});}catch(e){lines.push(`FALLÓ · ${name}: ${e.message}`);results.push({name,pass:false});}}
@@ -40,6 +40,13 @@ export function runTests({world,items,bins,game,reset,interaction,renderer}) {
     const p=items[0],h=new THREE.Object3D();h.position.copy(p.cuerpoFisico.position);h.updateMatrixWorld(true);sync(items);
     const a=interaction.states[0],b=interaction.states[1];interaction.press(a,p.malla,h);interaction.press(b,p.malla,h);
     assert(a.held===p && !b.held && p.estado==='sujeto');interaction.release(a);assert(p.cuerpoFisico.type===CANNON.Body.DYNAMIC && p.cuerpoFisico.mass===.14 && p.estado==='liberado');
+  });
+  reset();game.start();
+  check('Recuperar una pieza caída conserva inventario y puntuación',()=>{
+    const p=items[0];game.released(p);place(p,{x:3,y:.5,z:1});advance(3);updateRecoveryState(p);
+    assert(p.estado==='recuperable');const score=[game.hits,game.errors,game.attempts].join(',');document.getElementById('recover').click();
+    p.cuerpoFisico.updateAABB();assert(p.estado==='disponible' && Math.abs(p.cuerpoFisico.aabb.lowerBound.y-SETTINGS.tableTop)<.003);
+    assert(items.length===20 && score===[game.hits,game.errors,game.attempts].join(','));
   });
   reset();game.start();
   check('Tres depósitos erróneos: exactamente 3 errores / 3 intentos',()=>{

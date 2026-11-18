@@ -5,7 +5,7 @@ Laboratorio estático de clasificación geométrica para Meta Quest 3: veinte pi
 Evolución de [práctica 3.1 Web-VR](https://alonsorgt1.github.io/Web-VR/). El original `AMBIENTE VR` quedó intacto. Se preservan VRButton, ambas manos, pinza, raycasting, transformación relativa al agarrar, liberación con velocidad reciente, reinicio, salida y créditos. El menú y el arrastre se refactorizaron para la actividad; las manos usan articulaciones procedurales para evitar descargar modelos GLB.
 
 - [Repositorio público](https://github.com/ALONSORGT1/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3).
-- [URL prevista de Pages](https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/): **publicación pendiente de habilitar Pages; no declarar operativa hasta verificar HTTPS**.
+- [Abrir laboratorio en GitHub Pages](https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/): HTTPS verificado, publicación automática de GitHub completada. Evidencias en `docs/DESPLIEGUE.md`.
 - [LinkedIn del autor](https://www.linkedin.com/in/alonso-ram%C3%ADrez-guti%C3%A9rrez-27074516b/).
 
 ![Portada real de escritorio](docs/evidencias/portada.png)
