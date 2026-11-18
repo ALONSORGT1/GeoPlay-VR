@@ -1,0 +1,70 @@
+{
+  "verifiedAtUTC": "2026-11-18T20:13:46Z",
+  "sourceCommit": "e9e99f57773349a7b8f389519392b8815f675fd5",
+  "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/",
+  "files": [
+    {
+      "path": "index.html",
+      "http": 200,
+      "hashMatches": true
+    },
+    {
+      "path": "js/main.js",
+      "http": 200,
+      "hashMatches": true
+    },
+    {
+      "path": "js/physics.js",
+      "http": 200,
+      "hashMatches": true
+    },
+    {
+      "path": "js/game.js",
+      "http": 200,
+      "hashMatches": true
+    },
+    {
+      "path": "js/interaction.js",
+      "http": 200,
+      "hashMatches": true
+    },
+    {
+      "path": "tests/suite.js",
+      "http": 200,
+      "hashMatches": true
+    },
+    {
+      "path": "css/style.css",
+      "http": 200,
+      "hashMatches": true
+    },
+    {
+      "path": "assets/favicon.svg",
+      "http": 200,
+      "hashMatches": true
+    }
+  ],
+  "workflows": [
+    {
+      "head_sha": "e9e99f57773349a7b8f389519392b8815f675fd5",
+      "name": "pages build and deployment",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ALONSORGT1/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/actions/runs/44388700655"
+    },
+    {
+      "head_sha": "a763921f6dc84261071b3288127d6da0c67936b1",
+      "name": "pages build and deployment",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ALONSORGT1/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/actions/runs/44388414533"
+    },
+    {
+      "head_sha": "4c691e9a3531fd5f2abb63cbd1fdf42809489470",
+      "name": "pages build and deployment",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ALONSORGT1/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/actions/runs/44387829348"
+    }
+  ]
+}

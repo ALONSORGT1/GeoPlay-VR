@@ -64,6 +64,8 @@ export function redistribute(items) {
 }
 export function sync(items) { items.forEach(i=>{i.malla.position.copy(i.cuerpoFisico.position);i.malla.quaternion.copy(i.cuerpoFisico.quaternion);}); }
 export function updateRecoveryState(item,release=()=>{}) {
+  // Un acierto es terminal hasta Reiniciar: nunca rearmar una pieza ya contada.
+  if(item.estado==='clasificado')return;
   const b=item.cuerpoFisico;
   if(!item.holder && item.estado!=='clasificado' && b.position.y<.25) item.estado='recuperable';
   if(b.position.y< -1 || Math.abs(b.position.x)>6.5 || Math.abs(b.position.z)>4.5){

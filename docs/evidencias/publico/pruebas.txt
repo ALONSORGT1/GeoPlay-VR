@@ -1,0 +1,18 @@
+APROBADO · 20 cuerpos, 5 por categoría y 5 por mesa
+APROBADO · Cuatro mesas con colisionadores y cuatro botes sin techo
+APROBADO · Reinicio distinto, mezcla garantizada y sin solapamientos
+APROBADO · Las veinte piezas se asientan físicamente sobre las mesas
+APROBADO · Gravedad, rebote y reposo sobre suelo
+APROBADO · Choque real entre piezas transmite impulso
+APROBADO · Agarrar bloquea doble selección y libera con cuerpo dinámico
+APROBADO · Recuperar una pieza caída conserva inventario y puntuación
+APROBADO · Tres depósitos erróneos: exactamente 3 errores / 3 intentos
+APROBADO · No cuenta borde, vuelo ni entrada sin trayectoria por boca
+APROBADO · 20 depósitos correctos reales, sin duplicados, cinco por bote
+APROBADO · Tiempos por bote desde inicio y cronómetro final detenido
+APROBADO · Precisión verificada y pausa no suma tiempo
+APROBADO · Clasificados no se pueden agarrar
+APROBADO · Reiniciar restaura estados y no crea bodies huérfanos
+
+15/15 pruebas aprobadas. WebGL: 2.
+NO PROBADO EN VISOR: tracking real, ergonomía, frecuencia XR y audio espacial.

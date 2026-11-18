@@ -10,4 +10,12 @@ La herramienta `gh` no tenía sesión autenticada. El conector no ofrece configu
 
 En la comprobación posterior, la API pública del repositorio reportó `has_pages: true` y la URL HTTPS devolvió **200** con la portada Forma / Lab. No se atribuye al agente una configuración de Pages que no pudo ejecutar u observar. La API de detalle `/pages` respondió 404 sin autenticación, así que el modo `main / root` no se pudo confirmar mediante esa API.
 
-Se suben a continuación las correcciones y la documentación, y se verifica la versión publicada ejecutando las pruebas desde la URL pública. El resultado final y el commit se registrarán después del push.
+## Comprobación pública completada
+
+La publicación automática `pages build and deployment` del commit de aplicación `e9e99f57773349a7b8f389519392b8815f675fd5` terminó con **success**. Se descargaron ocho archivos desde Pages (HTML, JS, CSS y favicon): todos devolvieron HTTP 200 y coincidieron por SHA-256 con los archivos locales, normalizando únicamente finales de línea. Evidencia: [despliegue.json](evidencias/despliegue.json).
+
+Se abrió la URL pública con un navegador de pruebas aislado y se ejecutó la misma suite física desde HTTPS: **15/15 APROBADAS**, sin errores de consola ni peticiones HTTP fallidas, y sin desbordamiento horizontal a 390 px. Evidencia: [pruebas públicas](evidencias/publico/pruebas.txt), [consola y red públicas](evidencias/publico/navegador.json), [captura pública](evidencias/publico/laboratorio.png).
+
+Las entregas posteriores de documentación conservan el mismo sitio estático y se publican desde main. El commit final se entrega en la respuesta de cierre, evitando una referencia circular dentro del mismo commit. No hay bloqueo de publicación pendiente. La configuración exacta de Settings no fue observada; sí se verificaron el despliegue real y sus módulos públicos.
+
+Pendientes de equipo: pruebas de seguimiento real de manos, ergonomía, sonido y rendimiento del Quest 3 según `VALIDACION.md`. El sitio público no requiere pasos manuales de instalación o compilación.

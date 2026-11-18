@@ -1,6 +1,6 @@
 # Matriz de aceptación · 18/11/2026
 
-La validación automática usa Edge headless/WebGL2 y física cannon-es real. No representa una sesión inmersiva ni seguimiento real de manos. El registro reproducible está en [pruebas](evidencias/pruebas.txt), [captura de pruebas](evidencias/pruebas.png), [Network/Console](evidencias/navegador.json), [portada](evidencias/portada.png), [móvil](evidencias/movil.png) y [laboratorio](evidencias/laboratorio.png). Las pruebas públicas se guardan por separado en `evidencias/publico/`.
+La validación automática usa Edge headless/WebGL2 y física cannon-es real. No representa una sesión inmersiva ni seguimiento real de manos. Resultado: **15/15 aprobadas en localhost y desde Pages HTTPS**, cero errores de consola, cero respuestas HTTP fallidas y sin desbordamiento horizontal a 390 px. El registro reproducible está en [pruebas](evidencias/pruebas.txt), [captura de pruebas](evidencias/pruebas.png), [Network/Console](evidencias/navegador.json), [portada](evidencias/portada.png), [móvil](evidencias/movil.png) y [laboratorio](evidencias/laboratorio.png). Las pruebas públicas se guardan por separado en `evidencias/publico/`.
 
 | # | Requisito | Procedimiento | Esperado | Observado / evidencia | Estado |
 |---|---|---|---|---|---|
@@ -22,7 +22,7 @@ La validación automática usa Edge headless/WebGL2 y física cannon-es real. No
 | 16 | Fin detiene reloj | Completar veinte y simular más pasos | Tiempo no crece | Suite: estado completado y tiempo invariable | APROBADO |
 | 17 | Reinicio total | Reiniciar diez veces y contar bodies/estados | 0/20, reloj 0, eventos vacíos, mismos bodies | Suite sin cuerpos huérfanos ni contadores residuales | APROBADO |
 | 18 | Carga web/VR sin errores críticos | Console/Network y sesión real | Módulos/recursos correctos; sesión estable | Registro local sin errores y respuestas 200; VR requiere Quest | APROBADO web; NO PROBADO EN VISOR |
-| 19 | URLs públicas | Abrir repositorio y URL HTTPS, ejecutar suite remota | Sitio y repo accesibles | Resultado actualizado en DESPLIEGUE.md | Consultar DESPLIEGUE.md |
+| 19 | URLs públicas | Abrir repositorio y URL HTTPS, ejecutar suite remota | Sitio y repo accesibles | GitHub público, Pages HTTP 200, ocho archivos idénticos, flujo success y 15/15 pruebas remotas | APROBADO |
 | 20 | Problemas reales y conclusiones | Revisar README y borrador; alumno completa en plataforma | Dos incidentes reales y reflexión sin inventar evidencias | Problemas documentados y CONCLUSIONES.md creado; no se envió tarea académica | APROBADO documentación; entrega del alumno pendiente |
 
 ## Repetir pruebas sin build

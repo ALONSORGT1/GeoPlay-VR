@@ -1,0 +1,164 @@
+{
+  "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/",
+  "errors": [],
+  "requests": [
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/assets/lab-illustration.svg",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/css/style.css",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/landing.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/assets/favicon.svg",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/?test=1",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/css/style.css",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/assets/lab-illustration.svg",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/landing.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/assets/favicon.svg",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/main.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/VRButton.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/interaction.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/config.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/audio.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/hud.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/physics.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/game.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/environment.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/XRHandModelFactory.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/OculusHandPointerModel.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/XRHandMeshModel.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/webxr/XRHandPrimitiveModel.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.core.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/utils/SkeletonUtils.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/loaders/GLTFLoader.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/tests/suite.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/assets/favicon.svg",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/css/style.css",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/assets/lab-illustration.svg",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/js/landing.js",
+      "status": 200
+    },
+    {
+      "url": "https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/assets/favicon.svg",
+      "status": 200
+    }
+  ],
+  "mobileOverflow": false,
+  "testStatus": "passed"
+}
