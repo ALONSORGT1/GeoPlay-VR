@@ -61,7 +61,8 @@ export async function initLab() {
   new ResizeObserver(resize).observe(container);resize();
   let last=performance.now(),accumulator=0,uiTime=0;
   renderer.setAnimationLoop((now,frame)=>{
-    const dt=Math.min(Math.max((now-last)/1000,0),SETTINGS.maxDelta);last=now;
+    const realDelta=Math.max((now-last)/1000,0),dt=Math.min(realDelta,SETTINGS.maxDelta);last=now;
+    if(game.status==='jugando') game.elapsed+=realDelta;
     scene.updateMatrixWorld(true);interaction.update(dt||1/90,frame);
     const paused=game.status==='pausado';
     if(!paused){accumulator+=dt;
@@ -77,7 +78,7 @@ export async function initLab() {
             if(b.position.y< -1 || Math.abs(b.position.x)>6.5 || Math.abs(b.position.z)>4.5){if(item.holder)interaction.release(item.holder,true);item.estado='recuperable';}
             if(b.velocity.length()>2.4)b.velocity.scale(2.4/b.velocity.length(),b.velocity);
           }
-          game.update(SETTINGS.step/2,items,bins,world.contacts);
+          game.update(SETTINGS.step/2,items,bins,world.contacts,false);
         }
         accumulator-=SETTINGS.step;
       }

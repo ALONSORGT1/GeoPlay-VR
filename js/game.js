@@ -14,9 +14,9 @@ export class Game {
     item.estado='liberado'; item.attempt++; item.confirmed=false; item.stable=0;
     item.candidate=null; item.entered=null; item.supportBin=null;
   }
-  update(dt, items, bins, contacts) {
+  update(dt, items, bins, contacts, advanceClock=true) {
     if(this.status!=='jugando') return;
-    this.elapsed+=dt;
+    if(advanceClock) this.elapsed+=dt;
     for(const item of items) {
       if(item.holder || ['clasificado','disponible','recuperable'].includes(item.estado)) continue;
       const b=item.cuerpoFisico;
@@ -41,7 +41,8 @@ export class Game {
     }
   }
   inside(item,bin) {
-    const b=item.cuerpoFisico,s=b.shapes[0],limit=SETTINGS.binHalf-.004;
+    // Tolerancia milimétrica del solver: tocar la pared interior sí es un depósito válido.
+    const b=item.cuerpoFisico,s=b.shapes[0],limit=SETTINGS.binHalf+.002;
     if(s instanceof CANNON.Sphere){const p=localPoint(bin.index,b.position);return Math.abs(p.x)+s.radius<=limit && Math.abs(p.z+.02)+s.radius<=limit && p.y-s.radius>=SETTINGS.binBottom-.012 && p.y+s.radius<SETTINGS.binTop-.008;}
     let vertices=s.vertices;
     if(s instanceof CANNON.Box){vertices=[];const h=s.halfExtents;for(const x of [-h.x,h.x])for(const y of [-h.y,h.y])for(const z of [-h.z,h.z])vertices.push(new CANNON.Vec3(x,y,z));}

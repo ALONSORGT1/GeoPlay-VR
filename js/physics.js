@@ -15,22 +15,22 @@ export function staticBox(world,scene,w,h,d,p,color,angle=0,meta={}) {
   body.position.copy(p); body.quaternion.setFromEuler(0,angle,0); body.aabbNeedsUpdate=true; body.userData=meta; world.addBody(body);
   mesh.userData.collider=body; return mesh;
 }
-function convex(geometry) {
-  const pos=geometry.attributes.position, vertices=[], map=new Map(), ids=[];
-  for(let i=0;i<pos.count;i++) {
-    const v=[pos.getX(i),pos.getY(i),pos.getZ(i)], key=v.map(n=>n.toFixed(6)).join(',');
-    if(!map.has(key)) { map.set(key,vertices.length); vertices.push(new CANNON.Vec3(...v)); }
-    ids.push(map.get(key));
+function convex(n,r,h,pyramid=false) {
+  const vertices=Array.from({length:n},(_,i)=>new CANNON.Vec3(Math.sin(i*2*Math.PI/n)*r,-h/2,Math.cos(i*2*Math.PI/n)*r));
+  const faces=[Array.from({length:n},(_,i)=>n-1-i)];
+  if(pyramid){vertices.push(new CANNON.Vec3(0,h/2,0));for(let i=0;i<n;i++)faces.push([i,(i+1)%n,n]);}
+  else {
+    vertices.push(...vertices.map(v=>new CANNON.Vec3(v.x,h/2,v.z)));
+    faces.push(Array.from({length:n},(_,i)=>i+n));
+    for(let i=0;i<n;i++)faces.push([i,(i+1)%n,(i+1)%n+n,i+n]);
   }
-  const idx=geometry.index?.array || Array.from({length:pos.count},(_,i)=>i), faces=[];
-  for(let i=0;i<idx.length;i+=3) { const f=[ids[idx[i]],ids[idx[i+1]],ids[idx[i+2]]]; if(new Set(f).size===3) faces.push(f); }
   return new CANNON.ConvexPolyhedron({vertices,faces});
 }
 export function createPieces(world,scene) {
   const r=SETTINGS.size;
   const geometries=[new THREE.SphereGeometry(r,20,14),new THREE.BoxGeometry(r*1.6,r*1.6,r*1.6),new THREE.ConeGeometry(r*1.23,r*1.9,4,1),new THREE.CylinderGeometry(r,r,r*1.6,6,1)];
   // Cannon almacena vértices transformados en cada forma convexa: no compartir colisionadores.
-  const shapes=[()=>new CANNON.Sphere(r),()=>new CANNON.Box(new CANNON.Vec3(r*.8,r*.8,r*.8)),()=>convex(geometries[2]),()=>convex(geometries[3])];
+  const shapes=[()=>new CANNON.Sphere(r),()=>new CANNON.Box(new CANNON.Vec3(r*.8,r*.8,r*.8)),()=>convex(4,r*1.23,r*1.9,true),()=>convex(6,r,r*1.6)];
   return CATEGORIES.flatMap((category,k)=>Array.from({length:5},(_,n)=>{
     const mesh=new THREE.Mesh(geometries[k],new THREE.MeshStandardMaterial({color:category.color,metalness:.18,roughness:.32}));
     mesh.castShadow=true; mesh.receiveShadow=true; scene.add(mesh);
