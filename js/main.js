@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
-import { SETTINGS, STATIONS, stationPoint, localPoint } from './config.js';
+import { SETTINGS, STATIONS, stationPoint } from './config.js';
 import { createPhysics, createPieces, redistribute, place, sync, updateRecoveryState } from './physics.js';
 import { createEnvironment } from './environment.js';
 import { createInteraction } from './interaction.js';
-import { Game } from './game.js';
+import { Game, aboveOpening } from './game.js';
 import { createHUD } from './hud.js';
 import { feedbackSound, unlockAudio } from './audio.js';
 
@@ -52,14 +52,21 @@ export async function initLab() {
     renderer.xr.getReferenceSpace()?.addEventListener('reset',()=>{interaction.releaseAll();game.pause();});
   });
   renderer.xr.addEventListener('sessionend',()=>{interaction.releaseAll();game.pause();desktopCamera();document.body.classList.remove('in-vr');});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){interaction.releaseAll();game.pause();}});
-  window.addEventListener('blur',()=>{interaction.releaseAll();game.pause();});
+  // En el visor la sesión XR controla la visibilidad, aunque la pestaña 2D pierda el foco.
+  function pauseDesktop() {
+    if (renderer.xr.isPresenting) return;
+    interaction.releaseAll();
+    game.pause();
+    hud.update(game);
+  }
+  document.addEventListener('visibilitychange',()=>{if(document.hidden) pauseDesktop();});
+  window.addEventListener('blur',pauseDesktop);
   document.getElementById('start').onclick=start;document.getElementById('reset').onclick=reset;document.getElementById('recover').onclick=recover;document.getElementById('pause').onclick=()=>{interaction.releaseAll();game.pause();};
   document.getElementById('view').onclick=()=>{desktopCamera(camera.position.y>2?'front':'overview');};
   function resize(){const r=container.getBoundingClientRect();renderer.setSize(r.width,r.height);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();}
   new ResizeObserver(resize).observe(container);resize();
-  let last=performance.now(),accumulator=0,uiTime=0;
-  renderer.setAnimationLoop((now,frame)=>{
+  let last=performance.now(),accumulator=0;
+  function renderFrame(now,frame) {
     const realDelta=Math.max((now-last)/1000,0),dt=Math.min(realDelta,SETTINGS.maxDelta);last=now;
     if(game.status==='jugando') game.elapsed+=realDelta;
     scene.updateMatrixWorld(true);interaction.update(dt||1/90,frame);
@@ -72,7 +79,7 @@ export async function initLab() {
           for(const item of items) {
             const b=item.cuerpoFisico;
             if(item.holder) {
-              for(const bin of bins){const p=localPoint(bin.index,b.position);if(Math.abs(p.x)<SETTINGS.binHalf && Math.abs(p.z+.02)<SETTINGS.binHalf && b.position.y>SETTINGS.binTop+item.radius*.35)item.holder.entered=bin.index;}
+              for(const bin of bins) if(aboveOpening(item,bin)) item.holder.entered=bin.index;
             }
             updateRecoveryState(item,interaction.release);
             if(b.velocity.length()>2.4)b.velocity.scale(2.4/b.velocity.length(),b.velocity);
@@ -82,16 +89,18 @@ export async function initLab() {
         accumulator-=SETTINGS.step;
       }
     } else accumulator=0;
-    sync(items);uiTime+=dt;if(uiTime>.15){hud.update(game);uiTime=0;}
+    sync(items);
+    hud.update(game);
     renderer.render(scene,camera);
-  });
+  }
+  renderer.setAnimationLoop(renderFrame);
   const capability=document.getElementById('capability');
   capability.textContent=await navigator.xr?.isSessionSupported('immersive-vr')?'WebXR disponible · activa seguimiento de manos':'Vista de escritorio · abre esta URL en Meta Quest Browser para entrar a VR';
   // Solo presente con ?test=1; el modo de pruebas no altera partidas normales.
   if(new URLSearchParams(location.search).has('test')) {
     const {runTests}=await import('../tests/suite.js');
     document.getElementById('run-tests').hidden=false;
-    document.getElementById('run-tests').onclick=()=>runTests({world,items,bins,game,reset,interaction,scene,renderer});
+    document.getElementById('run-tests').onclick=()=>runTests({world,items,bins,game,reset,interaction,scene,renderer,hud,renderFrame});
     if(new URLSearchParams(location.search).has('autorun')) setTimeout(()=>document.getElementById('run-tests').click(),700);
   }
   document.getElementById('loading').hidden=true;

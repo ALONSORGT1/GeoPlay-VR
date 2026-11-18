@@ -13,6 +13,7 @@ export function createInteraction({scene,renderer,camera,items,buttons,occluders
     holder.updateWorldMatrix(true,false);item.malla.updateWorldMatrix(true,false);
     state.offset=new THREE.Matrix4().copy(holder.matrixWorld).invert().multiply(item.malla.matrixWorld);
     state.held=item;state.holder=holder;state.motion=[];item.holder=state;item.estado='sujeto';item.stable=0;
+    game.grabbed(item);
     item.cuerpoFisico.wakeUp();
   }
   function release(state,safe=false) {
@@ -36,14 +37,15 @@ export function createInteraction({scene,renderer,camera,items,buttons,occluders
   const xrInput=createXRInput({scene,hitFrom,press,release});
   renderer.xr.addEventListener('sessionstart',()=>xrInput.attach(renderer.xr.getSession()));
   renderer.xr.addEventListener('sessionend',()=>xrInput.attach(null));
-  const desktop={held:null,motion:[],holder:new THREE.Object3D(),entered:null};scene.add(desktop.holder);
+  const desktopAnchor=new THREE.Object3D();
+  const desktop={held:null,motion:[],holder:null,entered:null};scene.add(desktopAnchor);
   canvas.addEventListener('pointerdown',e=>{
     if(renderer.xr.isPresenting)return;
     const r=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);
     const hit=raycaster.intersectObjects(objects,false)[0];if(!hit)return;
     if(hit.object.userData.action){unlockAudio();hit.object.userData.action();return;}
-    desktop.depth=hit.distance;desktop.holder.position.copy(raycaster.ray.at(hit.distance,new THREE.Vector3()));desktop.holder.quaternion.copy(camera.quaternion);
-    press(desktop,hit.object,desktop.holder);canvas.setPointerCapture(e.pointerId);
+    desktop.depth=hit.distance;desktopAnchor.position.copy(raycaster.ray.at(hit.distance,new THREE.Vector3()));desktopAnchor.quaternion.copy(camera.quaternion);
+    press(desktop,hit.object,desktopAnchor);canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove',e=>{
     if(!desktop.held)return;const r=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);

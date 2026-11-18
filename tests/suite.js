@@ -4,13 +4,39 @@ import { testXRInput } from './xr-input.js';
 import { CATEGORIES, SETTINGS, stationPoint } from '../js/config.js';
 import { Game } from '../js/game.js';
 import { place, sync, updateRecoveryState } from '../js/physics.js';
-export function runTests({world,items,bins,game,reset,interaction,renderer}) {
+export function runTests({world,items,bins,game,reset,interaction,renderer,hud,renderFrame}) {
   const output=document.getElementById('test-results');output.hidden=false;const lines=[], results=[];
   function check(name,test){try{test();lines.push(`APROBADO · ${name}`);results.push({name,pass:true});}catch(e){lines.push(`FALLÓ · ${name}: ${e.message}`);results.push({name,pass:false});}}
   function assert(value,message='resultado inesperado'){if(!value)throw Error(message);}
   function advance(seconds,score=game){for(let i=0;i<seconds*120;i++){world.step(1/120);score.update(1/120,items,bins,world.contacts);}sync(items);}
   function drop(item,bin,x=0,z=0){game.released(item);place(item,stationPoint(bin.index,x,1.48,z-.02));}
   interaction.releaseAll();reset();
+  check('El HUD 3D avanza al soltar en la boca y vuelve a cero al reiniciar',()=>{
+    const item=items.find(p=>p.categoria==='esfera');
+    const bin=bins.find(b=>b.category===item.categoria);
+    const map=hud.panel.material.map;
+    const ctx=map.image.getContext('2d');
+    const segment=()=>Array.from(ctx.getImageData(412,265,1,1).data).join(',');
+    const empty=segment();
+    const tick=()=>renderFrame(performance.now());
+    hud.buttons[0].userData.action();
+    const holder=new THREE.Object3D(), state={};
+    holder.position.copy(item.cuerpoFisico.position);
+    interaction.press(state,item.malla,holder);
+    tick();
+    assert(document.getElementById('feedback').textContent.includes('en mano'));
+    place(item,stationPoint(bin.index,0,SETTINGS.binTop-item.radius+.008,-.02));
+    interaction.release(state);
+    advance(.4);tick();
+    assert(game.hits===0 && segment()===empty,'acierto antes del reposo');
+    const before=map.version;
+    advance(2);tick();
+    assert(game.hits===1 && game.counts.esfera===1,'depósito a ras de la boca');
+    assert(map.version>before && segment()!==empty,'la textura inmersiva no cambió');
+    assert(document.getElementById('score').textContent.includes('1/20 · Faltan 19'));
+    reset();assert(segment()===empty && game.elapsed===0,'barra residual al reiniciar');
+  });
+  reset();
   check('Entradas XR simuladas: gatillo, pinza, cambio de fuente y pérdida de pose',()=>testXRInput(assert));
   check('20 cuerpos, 5 por categoría y 5 por mesa',()=>{
     assert(items.length===20);for(const c of CATEGORIES)assert(items.filter(i=>i.categoria===c.id).length===5);

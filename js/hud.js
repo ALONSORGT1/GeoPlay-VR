@@ -5,6 +5,8 @@ export function createHUD(scene,actions,inputStatus) {
   const group=new THREE.Group();group.position.set(0,1.83,-1.65);scene.add(group);
   const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=650;const ctx=canvas.getContext('2d');
   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+  tex.generateMipmaps=false;
+  tex.minFilter=THREE.LinearFilter;
   const panel=new THREE.Mesh(new THREE.PlaneGeometry(1.25,.635),new THREE.MeshBasicMaterial({map:tex}));group.add(panel);
   const buttons=[];
   [['Comenzar','start'],['Reiniciar','reset'],['Recuperar','recover'],['Salir de VR','exit']].forEach(([text,action],i)=>{
@@ -13,21 +15,31 @@ export function createHUD(scene,actions,inputStatus) {
   let signature='';
   function update(game) {
     const input=inputStatus();
-    const key=JSON.stringify([input,game.status,Math.floor(game.elapsed),game.hits,game.errors,game.message]);if(signature===key)return;signature=key;
+    const remaining=20-game.hits;
+    const key=JSON.stringify([input,game.status,Math.floor(game.elapsed),game.counts,game.times,game.attempts,game.hits,game.errors,game.message]);if(signature===key)return;signature=key;
     ctx.fillStyle='#183b4e';ctx.fillRect(0,0,1280,650);ctx.textBaseline='middle';ctx.textAlign='left';
     ctx.fillStyle='#8fe1d2';ctx.font='500 25px system-ui';ctx.fillText('FORMA / LAB    ·    CLASIFICACIÓN GEOMÉTRICA',44,43);
     ctx.fillStyle='#ffffff';ctx.font='600 88px system-ui';ctx.fillText(`${game.hits} / 20`,44,123);
+    ctx.font='500 39px system-ui';ctx.fillStyle='#8fe1d2';
+    ctx.fillText(remaining===1?'Falta 1 pieza':`Faltan ${remaining} piezas`,445,123);
+    ctx.fillStyle='#ffffff';
     ctx.font='500 42px system-ui';ctx.fillText(timeText(game.elapsed),1000,117);
     ctx.font='400 25px system-ui';ctx.fillStyle='#c1d8df';ctx.fillText(`${game.status.toUpperCase()}   ·   ${game.attempts} intentos   ·   ${game.errors} errores   ·   ${game.accuracy.toFixed(0)} % precisión`,44,195);
     CATEGORIES.forEach((c,i)=>{
       const y=265+i*68;ctx.fillStyle=c.color;ctx.fillRect(44,y-20,6,43);ctx.font='500 28px system-ui';ctx.fillText(c.name,70,y);
-      ctx.fillStyle='#fff';ctx.fillText(`${game.counts[c.id]} / 5`,620,y);ctx.fillStyle='#bfd2d9';ctx.fillText(game.times[c.id]===null?'Pendiente':timeText(game.times[c.id]),910,y);
+      const completed=game.counts[c.id];
+      for(let slot=0;slot<5;slot++){
+        ctx.fillStyle=slot<completed?c.color:'#385969';
+        ctx.fillRect(405+slot*37,y-8,29,16);
+      }
+      ctx.fillStyle='#fff';ctx.fillText(`${completed} / 5`,620,y);
+      ctx.fillStyle='#bfd2d9';ctx.fillText(game.times[c.id]===null?'Pendiente':timeText(game.times[c.id]),910,y);
     });
     ctx.fillStyle=game.status==='completado'?'#8fe1d2':'#fff1cc';ctx.font='400 25px system-ui';ctx.fillText(game.message,44,558,1192);
     ctx.fillStyle='#bdd3d9';ctx.font='400 21px system-ui';ctx.fillText(input || 'Alonso Ramírez Gutiérrez   ·   Recuperar devuelve piezas caídas a una mesa',44,610);
     tex.needsUpdate=true;
-    document.getElementById('score').textContent=`${game.hits}/20 · ${game.errors} errores · ${game.accuracy.toFixed(0)} % · ${timeText(game.elapsed)} · ${game.status}`;
+    document.getElementById('score').textContent=`${game.hits}/20 · Faltan ${remaining} · ${game.errors} errores · ${game.accuracy.toFixed(0)} % · ${timeText(game.elapsed)} · ${game.status}`;
     document.getElementById('feedback').textContent=game.message;
   }
-  return {group,buttons,update};
+  return {group,panel,buttons,update};
 }

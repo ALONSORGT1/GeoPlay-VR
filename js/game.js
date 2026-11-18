@@ -1,5 +1,10 @@
 import { CATEGORIES, SETTINGS, localPoint } from './config.js';
 import * as CANNON from 'cannon-es';
+// Incluye el instante en que el centro cruza la boca con la pieza ya parcialmente dentro.
+export function aboveOpening(item,bin) {
+  const p=localPoint(bin.index,item.cuerpoFisico.position);
+  return p.y>=SETTINGS.binTop && Math.abs(p.x)<SETTINGS.binHalf && Math.abs(p.z+.02)<SETTINGS.binHalf;
+}
 export class Game {
   constructor(feedback = () => {}) { this.feedback = feedback; this.reset(); }
   reset() {
@@ -10,9 +15,14 @@ export class Game {
   start() { if (['preparado','pausado'].includes(this.status)) { this.status='jugando'; this.message='Apunta · pellizca · mueve · suelta'; } }
   pause() { if(this.status==='jugando') { this.status='pausado'; this.message='En pausa · pulsa Comenzar para continuar'; } }
   get accuracy() { return this.attempts ? this.hits/this.attempts*100 : 0; }
+  grabbed(item) {
+    const category=CATEGORIES.find(c=>c.id===item.categoria);
+    this.message=`Pieza en mano · llévala a ${category.name}`;
+  }
   released(item) {
     item.estado='liberado'; item.attempt++; item.confirmed=false; item.stable=0;
     item.candidate=null; item.entered=null; item.supportBin=null;
+    if(this.status==='jugando') this.message='Pieza suelta · esperando el depósito';
   }
   update(dt, items, bins, contacts, advanceClock=true) {
     if(this.status!=='jugando') return;
@@ -22,8 +32,7 @@ export class Game {
       const b=item.cuerpoFisico;
       // Entrada real: debe estar encima de la boca y después pasar al interior.
       for(const bin of bins) {
-        const p=localPoint(bin.index,b.position);
-        if(Math.abs(p.x)<SETTINGS.binHalf && Math.abs(p.z+.02)<SETTINGS.binHalf && p.y>=SETTINGS.binTop+item.radius*.35) item.entered=bin.index;
+        if(aboveOpening(item,bin)) item.entered=bin.index;
       }
       const bin=bins.find(bin=>this.inside(item,bin));
       if(!bin) { item.stable=0; item.candidate=null; if(!item.confirmed) item.estado='liberado'; continue; }
@@ -36,6 +45,7 @@ export class Game {
       const supported=touching || (b.sleepState===CANNON.Body.SLEEPING && item.supportBin===bin.index);
       if(!supported || b.velocity.length()>SETTINGS.linearThreshold || b.angularVelocity.length()>SETTINGS.angularThreshold) { item.stable=0; continue; }
       if(item.candidate!==bin.index) {item.candidate=bin.index; item.stable=0;}
+      if(item.estado!=='estabilizandose') this.message='Pieza en el recipiente · validando el reposo';
       item.estado='estabilizandose'; item.stable+=dt;
       if(item.stable>=SETTINGS.stableSeconds) this.confirm(item,bin);
     }
