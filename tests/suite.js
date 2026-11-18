@@ -43,10 +43,13 @@ export function runTests({world,items,bins,game,reset,interaction,renderer}) {
   });
   reset();game.start();
   check('Recuperar una pieza caída conserva inventario y puntuación',()=>{
-    const p=items[0];game.released(p);place(p,{x:3,y:.5,z:1});advance(3);updateRecoveryState(p);
-    assert(p.estado==='recuperable');const score=[game.hits,game.errors,game.attempts].join(',');document.getElementById('recover').click();
-    p.cuerpoFisico.updateAABB();assert(p.estado==='disponible' && Math.abs(p.cuerpoFisico.aabb.lowerBound.y-SETTINGS.tableTop)<.003);
-    assert(items.length===20 && score===[game.hits,game.errors,game.attempts].join(','));
+    // Repetir con las veinte piezas cubre ambas filas, categorías y mesas.
+    for(const p of items){
+      reset();game.start();game.released(p);place(p,{x:3,y:.5,z:1});advance(2);updateRecoveryState(p);
+      assert(p.estado==='recuperable',`${p.id}: no se detectó caída`);const score=[game.hits,game.errors,game.attempts].join(',');document.getElementById('recover').click();
+      p.cuerpoFisico.updateAABB();assert(p.estado==='disponible' && Math.abs(p.cuerpoFisico.aabb.lowerBound.y-SETTINGS.tableTop)<.003,`${p.id}: no se recuperó`);
+      assert(items.length===20 && score===[game.hits,game.errors,game.attempts].join(','));
+    }
   });
   reset();game.start();
   check('Tres depósitos erróneos: exactamente 3 errores / 3 intentos',()=>{
