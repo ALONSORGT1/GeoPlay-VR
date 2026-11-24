@@ -58,6 +58,11 @@ export function createXRInput({scene, hitFrom, press, release}) {
   function trigger(event) {
     const state = sources.get(event.inputSource);
     if (!state || event.inputSource.hand) return;
+    if (event.type === 'selectend' && state.held && event.frame && session.visibilityState === 'visible') {
+      const space = state.referenceSpace;
+      const pose = space && event.frame.getPose(event.inputSource.gripSpace || event.inputSource.targetRaySpace, space);
+      if (pose) state.velocityPose = pose;
+    }
     if (event.type === 'selectend' || state.tracking) select(state, event.type === 'selectstart');
   }
   function attach(next) {
@@ -99,12 +104,15 @@ export function createXRInput({scene, hitFrom, press, release}) {
     for (const [source, state] of sources) {
       const active = session.visibilityState === 'visible';
       const aim = active && frame.getPose(source.targetRaySpace, space);
+      state.referenceSpace = space;
+      state.velocityPose = aim;
       applyPose(state.ray, aim);
       if (source.hand) {
         state.tracking = active && updateHand(state, source.hand, frame, space) && !!aim;
         if (!active) state.model.visible = false;
       } else {
         const grip = active && source.gripSpace && frame.getPose(source.gripSpace, space);
+        state.velocityPose = grip || aim;
         applyPose(state.model, grip || aim);
         state.tracking = !!aim;
       }

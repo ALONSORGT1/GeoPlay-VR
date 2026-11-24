@@ -1,19 +1,33 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { CATEGORIES, SETTINGS, stationPoint, STATIONS } from './config.js';
+import { CATEGORIES, SETTINGS, stationPoint, STATIONS, TABLE_SLOTS } from './config.js';
 export function createPhysics() {
   const world=new CANNON.World({gravity:new CANNON.Vec3(0,-9.81,0),allowSleep:true});
   world.solver.iterations=24; world.broadphase=new CANNON.SAPBroadphase(world);
   world.defaultContactMaterial.friction=.55; world.defaultContactMaterial.restitution=.16;
-  const floor=new CANNON.Body({mass:0,shape:new CANNON.Plane()}); floor.quaternion.setFromEuler(-Math.PI/2,0,0); floor.aabbNeedsUpdate=true; world.addBody(floor);
   return world;
 }
-export function staticBox(world,scene,w,h,d,p,color,angle=0,meta={}) {
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.72}));
-  mesh.position.copy(p); mesh.rotation.y=angle; mesh.castShadow=true; mesh.receiveShadow=true; scene.add(mesh);
+export function addStaticCollider(world,w,h,d,p,angle,meta) {
   const body=new CANNON.Body({mass:0,shape:new CANNON.Box(new CANNON.Vec3(w/2,h/2,d/2))});
-  body.position.copy(p); body.quaternion.setFromEuler(0,angle,0); body.aabbNeedsUpdate=true; body.userData=meta; world.addBody(body);
-  mesh.userData.collider=body; return mesh;
+  body.position.copy(p); body.quaternion.setFromEuler(0,angle,0);
+  body.aabbNeedsUpdate=true; body.userData=meta; world.addBody(body);
+  return body;
+}
+// Bound travel of the fastest surface (including rotation) before testing contacts again.
+export function advancePhysics(world,items,dt,afterStep) {
+  let remaining=dt;
+  while(remaining>1e-8) {
+    let speed=0;
+    for(const item of items) {
+      const body=item.cuerpoFisico;
+      if(body.sleepState!==CANNON.Body.SLEEPING)
+        speed=Math.max(speed,body.velocity.length()+body.angularVelocity.length()*item.radius);
+    }
+    const step=Math.min(remaining,.016/Math.max(1,speed));
+    world.step(step);
+    afterStep(step);
+    remaining-=step;
+  }
 }
 function convex(n,r,h,pyramid=false) {
   const vertices=Array.from({length:n},(_,i)=>new CANNON.Vec3(Math.sin(i*2*Math.PI/n)*r,-h/2,Math.cos(i*2*Math.PI/n)*r));
@@ -35,7 +49,7 @@ export function createPieces(world,scene) {
     const mesh=new THREE.Mesh(geometries[k],new THREE.MeshStandardMaterial({color:category.color,metalness:.18,roughness:.32}));
     mesh.castShadow=true; mesh.receiveShadow=true; scene.add(mesh);
     geometries[k].computeBoundingSphere();
-    const body=new CANNON.Body({mass:.14,shape:shapes[k](),linearDamping:.12,angularDamping:.4,sleepSpeedLimit:.06,sleepTimeLimit:.7}); world.addBody(body);
+    const body=new CANNON.Body({mass:[.14,.12,.075,.11][k],shape:shapes[k](),linearDamping:.035,angularDamping:.3,sleepSpeedLimit:.06,sleepTimeLimit:.7}); world.addBody(body);
     const item={id:`${category.id}-${n+1}`,categoria:category.id,mesaOrigen:0,malla:mesh,cuerpoFisico:body,estado:'disponible',holder:null,eventos:[],attempt:0,confirmed:false,stable:0,entered:null,radius:geometries[k].boundingSphere.radius};
     body.userData={item}; mesh.userData.item=item; return item;
   }));
@@ -43,7 +57,7 @@ export function createPieces(world,scene) {
 function shuffle(a) { for(let i=a.length-1;i>0;i--) {const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 export function place(item,p,yaw=Math.random()*Math.PI*2) {
   const b=item.cuerpoFisico;
-  b.type=CANNON.Body.DYNAMIC; b.mass=.14; b.updateMassProperties();
+  b.type=CANNON.Body.DYNAMIC; b.updateMassProperties();
   b.quaternion.setFromEuler(0,yaw,0); b.position.set(p.x,0,p.z); b.updateAABB();
   b.position.y=p.y-b.aabb.lowerBound.y+.001; b.velocity.setZero(); b.angularVelocity.setZero(); b.force.setZero(); b.torque.setZero();
   b.previousPosition.copy(b.position); b.interpolatedPosition.copy(b.position); b.previousQuaternion.copy(b.quaternion); b.interpolatedQuaternion.copy(b.quaternion);
@@ -54,7 +68,7 @@ export function redistribute(items) {
   const extras=shuffle([0,1,2,3]), pools=CATEGORIES.map(c=>shuffle(items.filter(i=>i.categoria===c.id)));
   STATIONS.forEach((_,s)=>{
     const group=shuffle([...pools.map(pool=>pool.pop()),pools[extras[s]].pop()]);
-    const slots=shuffle([[-.25,.29],[0,.29],[.25,.29],[-.13,.48],[.13,.48]]);
+    const slots=shuffle([...TABLE_SLOTS]);
     group.forEach((item,k)=>{
       item.mesaOrigen=s; item.estado='disponible'; item.holder=null; item.eventos=[]; item.attempt=0; item.confirmed=false; item.stable=0; item.entered=null; item.candidate=null; item.recipiente=null;item.supportBin=null;
       const [x,z]=slots[k]; place(item,stationPoint(s,x+(Math.random()-.5)*.025,SETTINGS.tableTop,z+(Math.random()-.5)*.025));
@@ -64,11 +78,15 @@ export function redistribute(items) {
 }
 export function sync(items) { items.forEach(i=>{i.malla.position.copy(i.cuerpoFisico.position);i.malla.quaternion.copy(i.cuerpoFisico.quaternion);}); }
 export function updateRecoveryState(item,release=()=>{}) {
+  const b=item.cuerpoFisico;
+  if(b.position.y< -1 && b.sleepState!==CANNON.Body.SLEEPING) b.sleep();
   // Un acierto es terminal hasta Reiniciar: nunca rearmar una pieza ya contada.
   if(item.estado==='clasificado')return;
-  const b=item.cuerpoFisico;
   if(!item.holder && item.estado!=='clasificado' && b.position.y<.25) item.estado='recuperable';
-  if(b.position.y< -1 || Math.abs(b.position.x)>6.5 || Math.abs(b.position.z)>4.5){
+  const bounds=b.world?.roomHalfSize;
+  const beyondRoom=bounds && (Math.abs(b.position.x)>bounds.x || Math.abs(b.position.z)>bounds.z);
+  const outOfReach=!item.holder && b.sleepState===CANNON.Body.SLEEPING && Math.hypot(b.position.x,b.position.z)>3;
+  if(b.position.y< -1 || beyondRoom || outOfReach){
     if(item.holder)release(item.holder,true);item.estado='recuperable';
   }
 }

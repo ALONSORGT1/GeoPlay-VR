@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import { createXRInput } from './xr-input.js';
 import { unlockAudio } from './audio.js';
-export function createInteraction({scene,renderer,camera,items,buttons,occluders,game,canvas}) {
+import { aboveOpening } from './game.js';
+export function createInteraction({scene,renderer,camera,items,bins=[],buttons,occluders,game,canvas}) {
   const raycaster=new THREE.Raycaster(),mat=new THREE.Matrix4(),target=new THREE.Matrix4(),p=new THREE.Vector3(),q=new THREE.Quaternion(),scale=new THREE.Vector3();
   const objects=[...items.map(i=>i.malla),...buttons,...occluders];
   function press(state,object,holder) {
@@ -12,6 +13,8 @@ export function createInteraction({scene,renderer,camera,items,buttons,occluders
     if(!item || item.holder || item.estado==='clasificado' || state.held || game.status!=='jugando')return;
     holder.updateWorldMatrix(true,false);item.malla.updateWorldMatrix(true,false);
     state.offset=new THREE.Matrix4().copy(holder.matrixWorld).invert().multiply(item.malla.matrixWorld);
+    state.lastPosition=item.malla.getWorldPosition(new THREE.Vector3());
+    state.lastRotation=item.malla.getWorldQuaternion(new THREE.Quaternion());
     state.held=item;state.holder=holder;state.motion=[];item.holder=state;item.estado='sujeto';item.stable=0;
     game.grabbed(item);
     item.cuerpoFisico.wakeUp();
@@ -21,13 +24,27 @@ export function createInteraction({scene,renderer,camera,items,buttons,occluders
     const item=state.held,b=item.cuerpoFisico;
     // Control por velocidad de un cuerpo dinámico: equivalente al arrastre, conserva contactos estáticos.
     if(safe) {b.velocity.setZero();b.angularVelocity.setZero();}
-    else if(state.motion.length) {
+    else {
       b.velocity.setZero();b.angularVelocity.setZero();
-      state.motion.forEach(m=>{b.velocity.addScaledVector(1/state.motion.length,m.v,b.velocity);b.angularVelocity.addScaledVector(1/state.motion.length,m.w,b.angularVelocity);});
+      const duration=state.motion.reduce((sum,m)=>sum+m.dt,0);
+      for(const sample of state.motion) {
+        b.velocity.addScaledVector(sample.dt/duration,sample.v,b.velocity);
+        b.angularVelocity.addScaledVector(sample.dt/duration,sample.w,b.angularVelocity);
+      }
+      const pose=state.velocityPose;
+      if (pose?.angularVelocity) b.angularVelocity.copy(pose.angularVelocity);
+      if (pose?.linearVelocity) {
+        // v at the piece's centre = grip velocity + omega crossed with its lever arm.
+        const offset=new THREE.Vector3().copy(b.position).sub(pose.transform.position);
+        const tangential=new THREE.Vector3().copy(b.angularVelocity).cross(offset);
+        b.velocity.copy(pose.linearVelocity);
+        b.velocity.x+=tangential.x;b.velocity.y+=tangential.y;b.velocity.z+=tangential.z;
+      }
     }
-    b.mass=.14;b.updateMassProperties();b.wakeUp();item.holder=null;game.released(item);
-    // Al soltar ya dentro de la boca se conserva evidencia de la trayectoria física del agarre.
-    item.entered=state.entered ?? null;state.entered=null;state.held=null;state.holder=null;state.motion=[];
+    // La liberación puede ocurrir entre dos pasos de la simulación.
+    const entered=bins.find(bin=>aboveOpening(item,bin))?.index ?? state.entered ?? null;
+    b.wakeUp();item.holder=null;game.released(item,entered);
+    state.entered=null;state.held=null;state.holder=null;state.motion=[];
   }
   function hitFrom(holder) {
     holder.updateWorldMatrix(true,false);mat.extractRotation(holder.matrixWorld);
@@ -41,6 +58,7 @@ export function createInteraction({scene,renderer,camera,items,buttons,occluders
   const desktop={held:null,motion:[],holder:null,entered:null};scene.add(desktopAnchor);
   canvas.addEventListener('pointerdown',e=>{
     if(renderer.xr.isPresenting)return;
+    raycaster.far=Infinity;
     const r=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);
     const hit=raycaster.intersectObjects(objects,false)[0];if(!hit)return;
     if(hit.object.userData.action){unlockAudio();hit.object.userData.action();return;}
@@ -61,12 +79,19 @@ export function createInteraction({scene,renderer,camera,items,buttons,occluders
       state.holder.updateWorldMatrix(true,false);target.multiplyMatrices(state.holder.matrixWorld,state.offset);target.decompose(p,q,scale);
       const distance=p.distanceTo(b.position);
       if(distance>.85 || !Number.isFinite(distance)){release(state,true);continue;}
-      const v=p.clone().sub(b.position).multiplyScalar(18);if(v.length()>1.8)v.setLength(1.8);b.velocity.copy(v);
+      const v=p.clone().sub(b.position).multiplyScalar(24);b.velocity.copy(v);
       const rot=q.clone().multiply(new THREE.Quaternion().copy(b.quaternion).invert()).normalize();if(rot.w<0)rot.set(-rot.x,-rot.y,-rot.z,-rot.w);
-      const sin=Math.hypot(rot.x,rot.y,rot.z),angle=2*Math.acos(THREE.MathUtils.clamp(rot.w,-1,1)),k=sin>1e-6?Math.min(angle*18,6)/sin:0;
+      const sin=Math.hypot(rot.x,rot.y,rot.z),angle=2*Math.atan2(sin,rot.w),k=sin>1e-6?angle*24/sin:0;
       b.angularVelocity.set(rot.x*k,rot.y*k,rot.z*k);b.wakeUp();
-      state.motion.push({v:b.velocity.clone(),w:b.angularVelocity.clone(),dt});
-      while(state.motion.length>1 && state.motion.reduce((sum,m)=>sum+m.dt,0)>.09)state.motion.shift();
+      if(dt>0 && dt<.10) {
+        const delta=q.clone().multiply(state.lastRotation.invert()).normalize();
+        if(delta.w<0) delta.set(-delta.x,-delta.y,-delta.z,-delta.w);
+        const axis=new THREE.Vector3(delta.x,delta.y,delta.z), sine=axis.length();
+        if(sine>0) axis.multiplyScalar(2*Math.atan2(sine,delta.w)/(sine*dt));
+        state.motion.push({v:p.clone().sub(state.lastPosition).divideScalar(dt),w:axis,dt});
+        while(state.motion.length>1 && state.motion.reduce((sum,m)=>sum+m.dt,0)>.035)state.motion.shift();
+      } else state.motion.length=0;
+      state.lastPosition.copy(p);state.lastRotation.copy(q);
     }
   }
   return {update,press,release,inputStatus:xrInput.status,releaseAll(){

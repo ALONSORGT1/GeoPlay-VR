@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { testXRInput } from './xr-input.js';
-import { CATEGORIES, SETTINGS, stationPoint } from '../js/config.js';
+import { CATEGORIES, SETTINGS, STATIONS, stationPoint, localPoint } from '../js/config.js';
 import { Game } from '../js/game.js';
-import { place, sync, updateRecoveryState } from '../js/physics.js';
-export function runTests({world,items,bins,game,reset,interaction,renderer,hud,renderFrame}) {
+import { advancePhysics, place, sync, updateRecoveryState } from '../js/physics.js';
+export function runTests({world,items,bins,game,reset,interaction,renderer,hud,renderFrame,scene,camera,occluders}) {
   const output=document.getElementById('test-results');output.hidden=false;const lines=[], results=[];
   function check(name,test){try{test();lines.push(`APROBADO · ${name}`);results.push({name,pass:true});}catch(e){lines.push(`FALLÓ · ${name}: ${e.message}`);results.push({name,pass:false});}}
   function assert(value,message='resultado inesperado'){if(!value)throw Error(message);}
@@ -25,7 +25,8 @@ export function runTests({world,items,bins,game,reset,interaction,renderer,hud,r
     interaction.press(state,item.malla,holder);
     tick();
     assert(document.getElementById('feedback').textContent.includes('en mano'));
-    place(item,stationPoint(bin.index,0,SETTINGS.binTop-item.radius+.008,-.02));
+    // El centro ya está bajo el borde y solo sobresale la parte superior de la esfera.
+    place(item,stationPoint(bin.index,0,SETTINGS.binTop-2*item.radius+.007,-.02));
     interaction.release(state);
     advance(.4);tick();
     assert(game.hits===0 && segment()===empty,'acierto antes del reposo');
@@ -35,6 +36,65 @@ export function runTests({world,items,bins,game,reset,interaction,renderer,hud,r
     assert(map.version>before && segment()!==empty,'la textura inmersiva no cambió');
     assert(document.getElementById('score').textContent.includes('1/20 · Faltan 19'));
     reset();assert(segment()===empty && game.elapsed===0,'barra residual al reiniciar');
+  });
+  reset();
+  check('Salón 1:1, piso en Y=0, vanos, trabe y espacio central de interacción',()=>{
+    const room=scene.getObjectByName('Salon');
+    const bounds=new THREE.Box3().setFromObject(room,true);
+    const size=bounds.getSize(new THREE.Vector3());
+    assert(size.distanceTo(new THREE.Vector3(7.50,3.30,8.60))<.0001 && Math.abs(bounds.min.y)<.0001);
+    const overview=camera.position.y>2;
+    if(overview) document.getElementById('view').click();
+    assert(camera.position.y===1.65 && camera.getWorldScale(new THREE.Vector3()).distanceTo(new THREE.Vector3(1,1,1))<1e-6,'altura y escala de usuario');
+    if(overview) document.getElementById('view').click();
+    const named=name=>world.bodies.filter(b=>b.userData?.name===name);
+    const beam=named('trabe_central')[0];beam.updateAABB();assert(Math.abs(beam.aabb.lowerBound.y-2.80)<.0001);
+    assert(named('ventana_este_sur').length===13 && named('ventana_este_norte').length===13);
+    assert(named('puerta_oeste').length===6);
+    for(const [i] of STATIONS.entries()) for(const x of [-.43,.43]) for(const z of [-.255,.685]){
+      const p=stationPoint(i,x,SETTINGS.tableTop,z);
+      assert(Math.abs(p.x)<3.55-.90 && Math.abs(p.z)<4.10-.90,'pasillo perimetral');
+      assert(Math.hypot(p.x,p.z)<3,'alcance del rayo');
+    }
+    assert(STATIONS.every(s=>Math.hypot(s.x,s.z)-.685>1),'radio central libre');
+  });
+  check('Las veinte piezas y los cuatro botones son accesibles desde el centro',()=>{
+    scene.updateMatrixWorld(true);
+    const targets=[...items.map(item=>item.malla),...hud.buttons];
+    const pickable=[...targets,...occluders];
+    const ray=new THREE.Raycaster();
+    ray.far=3;
+    ray.ray.origin.set(0,1.35,0);
+    for(const mesh of targets){
+      mesh.getWorldPosition(ray.ray.direction).sub(ray.ray.origin).normalize();
+      assert(ray.intersectObjects(pickable,false)[0]?.object===mesh,'rayo obstruido');
+    }
+  });
+  check('Lanzamientos rápidos de las cuatro formas contra vidrio, puerta, mesa, caja y piso',()=>{
+    const glass=world.bodies.find(b=>b.userData?.name==='ventana_este_sur' && b.shapes[0].halfExtents.x<.004);
+    const door=world.bodies.find(b=>b.userData?.name==='puerta_oeste');
+    const walls=world.bodies.filter(b=>b.userData?.name==='pared_sur');
+    function fire(item,p,v,test,label){
+      place(item,p,0);
+      item.cuerpoFisico.velocity.copy(v);item.cuerpoFisico.angularVelocity.set(12,21,-7);
+      for(let i=0;i<5;i++) advancePhysics(world,[item],1/120,()=>{
+        assert(test(item.cuerpoFisico.position),item.id+' / '+label);
+      });
+    }
+    for(const category of CATEGORIES){
+      const item=items.find(i=>i.categoria===category.id);
+      for(const [body,axis,dir] of [[glass,'x',-1],[door,'x',1],[walls[0],'z',-1]]){
+        const p=body.position.clone();p[axis]-=dir*.32;
+        const v=new CANNON.Vec3();v[axis]=dir*32;
+        fire(item,p,v,pos=>dir*(pos[axis]-body.position[axis])<0,body.userData.name);
+      }
+      fire(item,{x:2.8,y:.40,z:2},{x:0,y:-36,z:0},p=>p.y>0,'piso');
+      fire(item,stationPoint(0,0,1.15,.42),{x:0,y:-32,z:0},p=>p.y>SETTINGS.tableTop-.03,'mesa');
+      const s=STATIONS[0],v={x:Math.cos(s.angle)*27,y:0,z:-Math.sin(s.angle)*27};
+      fire(item,stationPoint(0,0,SETTINGS.binBottom+.06,-.02),v,
+        p=>localPoint(0,p).x<SETTINGS.binHalf+.0175,'caja');
+      reset();
+    }
   });
   reset();
   check('Entradas XR simuladas: gatillo, pinza, cambio de fuente y pérdida de pose',()=>testXRInput(assert));
@@ -56,8 +116,20 @@ export function runTests({world,items,bins,game,reset,interaction,renderer,hud,r
     advance(2);for(const p of items){p.cuerpoFisico.updateAABB();assert(Math.abs(p.cuerpoFisico.aabb.lowerBound.y-SETTINGS.tableTop)<.015,`${p.id}: pos=${p.cuerpoFisico.position.toString()}, y=${p.cuerpoFisico.aabb.lowerBound.y}, v=${p.cuerpoFisico.velocity.toString()}`);}
   });
   check('Gravedad, rebote y reposo sobre suelo',()=>{
-    const p=items[0],b=p.cuerpoFisico;place(p,{x:3,y:.8,z:1});const initial=b.position.y;advance(.1);assert(b.position.y<initial);
+    assert(world.gravity.almostEquals(new CANNON.Vec3(0,-9.81,0)));
+    const p=items[0],b=p.cuerpoFisico;place(p,{x:3,y:.8,z:1});const initial=b.position.y;advance(.1);
+    assert(Math.abs(initial-b.position.y-.5*9.81*.1**2)<.006,'distancia de caída en 100 ms');
     let bounce=false;for(let i=0;i<200;i++){world.step(1/120);if(b.velocity.y>.1)bounce=true;}assert(bounce,'no hubo rebote');advance(2);b.updateAABB();assert(b.aabb.lowerBound.y>-.01 && b.aabb.lowerBound.y<.015);
+  });
+  check('El cubo se desliza, gira y pierde velocidad por contacto con el piso',()=>{
+    const cube=items.find(p=>p.categoria==='cubo'),b=cube.cuerpoFisico;
+    place(cube,{x:0,y:.001,z:2.4},0);
+    b.velocity.set(1.7,0,0);b.angularVelocity.set(0,5,0);
+    advance(.10);
+    assert(b.position.x>.06 && Math.abs(b.quaternion.y)>.015,'desplazamiento y giro');
+    assert(b.velocity.x>0 && b.velocity.x<1.65,'fricción al deslizar');
+    advance(2);
+    assert(b.velocity.length()<.02 && b.angularVelocity.length()<.05,'reposo final');
   });
   check('Choque real entre piezas transmite impulso',()=>{
     const a=items[0].cuerpoFisico,b=items[1].cuerpoFisico;place(items[0],{x:3,y:.001,z:2});place(items[1],{x:3.19,y:.001,z:2});a.velocity.set(1.5,0,0);

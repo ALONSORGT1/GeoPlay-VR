@@ -1,9 +1,14 @@
 import { CATEGORIES, SETTINGS, localPoint } from './config.js';
 import * as CANNON from 'cannon-es';
-// Incluye el instante en que el centro cruza la boca con la pieza ya parcialmente dentro.
+const openingHeight=SETTINGS.binTop-.008;
+
 export function aboveOpening(item,bin) {
-  const p=localPoint(bin.index,item.cuerpoFisico.position);
-  return p.y>=SETTINGS.binTop && Math.abs(p.x)<SETTINGS.binHalf && Math.abs(p.z+.02)<SETTINGS.binHalf;
+  const body=item.cuerpoFisico;
+  const p=localPoint(bin.index,body.position);
+  if(Math.abs(p.x)>=SETTINGS.binHalf || Math.abs(p.z+.02)>=SETTINGS.binHalf) return false;
+  // Al cruzar la boca, el centro puede estar debajo del borde y la pieza todavía sobresalir.
+  if(body.aabbNeedsUpdate) body.updateAABB();
+  return body.aabb.upperBound.y>=openingHeight;
 }
 export class Game {
   constructor(feedback = () => {}) { this.feedback = feedback; this.reset(); }
@@ -19,9 +24,9 @@ export class Game {
     const category=CATEGORIES.find(c=>c.id===item.categoria);
     this.message=`Pieza en mano · llévala a ${category.name}`;
   }
-  released(item) {
+  released(item,entered=null) {
     item.estado='liberado'; item.attempt++; item.confirmed=false; item.stable=0;
-    item.candidate=null; item.entered=null; item.supportBin=null;
+    item.candidate=null; item.entered=entered; item.supportBin=null;
     if(this.status==='jugando') this.message='Pieza suelta · esperando el depósito';
   }
   update(dt, items, bins, contacts, advanceClock=true) {
@@ -53,10 +58,10 @@ export class Game {
   inside(item,bin) {
     // Tolerancia milimétrica del solver: tocar la pared interior sí es un depósito válido.
     const b=item.cuerpoFisico,s=b.shapes[0],limit=SETTINGS.binHalf+.002;
-    if(s instanceof CANNON.Sphere){const p=localPoint(bin.index,b.position);return Math.abs(p.x)+s.radius<=limit && Math.abs(p.z+.02)+s.radius<=limit && p.y-s.radius>=SETTINGS.binBottom-.012 && p.y+s.radius<SETTINGS.binTop-.008;}
+    if(s instanceof CANNON.Sphere){const p=localPoint(bin.index,b.position);return Math.abs(p.x)+s.radius<=limit && Math.abs(p.z+.02)+s.radius<=limit && p.y-s.radius>=SETTINGS.binBottom-.012 && p.y+s.radius<openingHeight;}
     let vertices=s.vertices;
     if(s instanceof CANNON.Box){vertices=[];const h=s.halfExtents;for(const x of [-h.x,h.x])for(const y of [-h.y,h.y])for(const z of [-h.z,h.z])vertices.push(new CANNON.Vec3(x,y,z));}
-    return vertices.every(v=>{const w=b.quaternion.vmult(v);w.vadd(b.position,w);const p=localPoint(bin.index,w);return Math.abs(p.x)<=limit && Math.abs(p.z+.02)<=limit && p.y>=SETTINGS.binBottom-.012 && p.y<SETTINGS.binTop-.008;});
+    return vertices.every(v=>{const w=b.quaternion.vmult(v);w.vadd(b.position,w);const p=localPoint(bin.index,w);return Math.abs(p.x)<=limit && Math.abs(p.z+.02)<=limit && p.y>=SETTINGS.binBottom-.012 && p.y<openingHeight;});
   }
   confirm(item,bin) {
     if(item.confirmed || item.estado==='clasificado') return;

@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { Body } from 'cannon-es';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
-import { SETTINGS, STATIONS, stationPoint } from './config.js';
-import { createPhysics, createPieces, redistribute, place, sync, updateRecoveryState } from './physics.js';
+import { SETTINGS, STATIONS, stationPoint, TABLE_SLOTS } from './config.js';
+import { advancePhysics, createPhysics, createPieces, redistribute, place, sync, updateRecoveryState } from './physics.js';
 import { createEnvironment } from './environment.js';
 import { createInteraction } from './interaction.js';
 import { Game, aboveOpening } from './game.js';
@@ -10,15 +11,16 @@ import { feedbackSound, unlockAudio } from './audio.js';
 
 export async function initLab() {
   const container=document.getElementById('viewport'),scene=new THREE.Scene();
-  const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.xr.enabled=true;
+  const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;renderer.xr.enabled=true;
+  renderer.shadowMap.autoUpdate=false;
   renderer.xr.setReferenceSpaceType('local-floor');renderer.setClearColor('#b5d7e4');container.appendChild(renderer.domElement);
   const camera=new THREE.PerspectiveCamera(56,1,.025,35);
   function desktopCamera(view='overview') {
     if(view==='front'){camera.position.set(0,1.65,.1);camera.lookAt(0,1,-1.4);}
-    else {camera.position.set(2.6,3.1,4.3);camera.lookAt(0,.95,-.75);}
+    else {camera.position.set(2.25,2.55,3.55);camera.lookAt(0,1.12,-.9);}
   }
   desktopCamera();
-  const world=createPhysics(),{bins,occluders}=createEnvironment(scene,world),items=createPieces(world,scene);
+  const world=createPhysics(),{bins,occluders}=await createEnvironment(scene,world),items=createPieces(world,scene);
   const game=new Game((type,item)=>{
     feedbackSound(type);
     if(item){item.malla.material.emissive.set(type==='error'?'#e75454':'#5cebc0');item.malla.material.emissiveIntensity=.45;}
@@ -31,7 +33,7 @@ export async function initLab() {
       if(item.holder || !['recuperable','error'].includes(item.estado))continue;
       let free=null;
       for(const s of [item.mesaOrigen,...STATIONS.map((_,i)=>i).filter(i=>i!==item.mesaOrigen)]) {
-        for(const [x,z] of [[-.25,.29],[0,.29],[.25,.29],[-.13,.48],[.13,.48]]) {
+        for(const [x,z] of TABLE_SLOTS) {
           const p=stationPoint(s,x,SETTINGS.tableTop,z);
           if(!free && obstacles.every(other=>Math.hypot(other.cuerpoFisico.position.x-p.x,other.cuerpoFisico.position.z-p.z)>other.radius+item.radius+.004 || other.cuerpoFisico.position.y>1.1))free=p;
         }
@@ -43,7 +45,7 @@ export async function initLab() {
   const start=()=>{unlockAudio();game.start();hud.update(game);};
   const exit=()=>renderer.xr.getSession()?.end().catch(showError);
   const hud=createHUD(scene,{start,reset,recover,exit},()=>interaction?.inputStatus() || '');
-  interaction=createInteraction({scene,renderer,camera,items,buttons:hud.buttons,occluders,game,canvas:renderer.domElement});reset();
+  interaction=createInteraction({scene,renderer,camera,items,bins,buttons:hud.buttons,occluders,game,canvas:renderer.domElement});reset();
   const vr=VRButton.createButton(renderer,{optionalFeatures:['hand-tracking']});document.getElementById('vr-entry').appendChild(vr);
   renderer.xr.addEventListener('sessionstart',()=>{
     interaction.releaseAll();camera.position.set(0,0,0);camera.quaternion.identity();document.body.classList.add('in-vr');
@@ -69,23 +71,21 @@ export async function initLab() {
   function renderFrame(now,frame) {
     const realDelta=Math.max((now-last)/1000,0),dt=Math.min(realDelta,SETTINGS.maxDelta);last=now;
     if(game.status==='jugando') game.elapsed+=realDelta;
-    scene.updateMatrixWorld(true);interaction.update(dt||1/90,frame);
+    scene.updateMatrixWorld(true);interaction.update(realDelta,frame);
     const paused=game.status==='pausado';
+    if(!paused && items.some(item=>item.cuerpoFisico.sleepState!==Body.SLEEPING))
+      renderer.shadowMap.needsUpdate=true;
     if(!paused){accumulator+=dt;
       while(accumulator>=SETTINGS.step){
-        // Dos micro pasos fijos conservan paredes de 3,5 cm con velocidades limitadas.
-        for(let sub=0;sub<2;sub++) {
-          world.step(SETTINGS.step/2);
+        advancePhysics(world,items,SETTINGS.step,substep=>{
           for(const item of items) {
-            const b=item.cuerpoFisico;
             if(item.holder) {
               for(const bin of bins) if(aboveOpening(item,bin)) item.holder.entered=bin.index;
             }
             updateRecoveryState(item,interaction.release);
-            if(b.velocity.length()>2.4)b.velocity.scale(2.4/b.velocity.length(),b.velocity);
           }
-          game.update(SETTINGS.step/2,items,bins,world.contacts,false);
-        }
+          game.update(substep,items,bins,world.contacts,false);
+        });
         accumulator-=SETTINGS.step;
       }
     } else accumulator=0;
@@ -100,7 +100,7 @@ export async function initLab() {
   if(new URLSearchParams(location.search).has('test')) {
     const {runTests}=await import('../tests/suite.js');
     document.getElementById('run-tests').hidden=false;
-    document.getElementById('run-tests').onclick=()=>runTests({world,items,bins,game,reset,interaction,scene,renderer,hud,renderFrame});
+    document.getElementById('run-tests').onclick=()=>runTests({world,items,bins,game,reset,interaction,scene,camera,occluders,renderer,hud,renderFrame});
     if(new URLSearchParams(location.search).has('autorun')) setTimeout(()=>document.getElementById('run-tests').click(),700);
   }
   document.getElementById('loading').hidden=true;

@@ -5,13 +5,14 @@ export const CATEGORIES = [
   { id: 'prisma', name: 'Prismas hexagonales', symbol: '⬡', color: '#7f91d8' }
 ];
 // Cada estación apunta al origen. Metros, Y arriba; usuario estable en (0,0,0).
-export const STATIONS = [-75, -25, 25, 75].map(deg => {
+export const STATIONS = [-72, -24, 24, 72].map(deg => {
   const a = deg * Math.PI / 180;
-  return { x: Math.sin(a) * 1.30, z: -Math.cos(a) * 1.30, angle: -a };
+  return { x: Math.sin(a) * 1.72, z: -Math.cos(a) * 1.72, angle: -a };
 });
-export const SETTINGS = { size: .055, stableSeconds: .8, linearThreshold: .065,
-  angularThreshold: .35, step: 1 / 60, maxDelta: .05, substeps: 8,
-  tableTop: .82, binBottom: .85, binTop: 1.13, binHalf: .19 };
+export const SETTINGS = { size: .048, stableSeconds: .8, linearThreshold: .065,
+  angularThreshold: .35, step: 1 / 120, maxDelta: .05,
+  tableTop: .76, binBottom: .795, binTop: 1.045, binHalf: .20 };
+export const TABLE_SLOTS = [[-.28,.32],[0,.32],[.28,.32],[-.15,.53],[.15,.53]];
 export function stationPoint(i, x, y, z) {
   const s = STATIONS[i], c = Math.cos(s.angle), n = Math.sin(s.angle);
   return { x: s.x + c*x + n*z, y, z: s.z - n*x + c*z };

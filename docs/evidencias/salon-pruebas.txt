@@ -1,0 +1,24 @@
+APROBADO · El HUD 3D avanza al soltar en la boca y vuelve a cero al reiniciar
+APROBADO · Salón 1:1, piso en Y=0, vanos, trabe y espacio central de interacción
+APROBADO · Las veinte piezas y los cuatro botones son accesibles desde el centro
+APROBADO · Lanzamientos rápidos de las cuatro formas contra vidrio, puerta, mesa, caja y piso
+APROBADO · Entradas XR simuladas: gatillo, pinza, cambio de fuente y pérdida de pose
+APROBADO · 20 cuerpos, 5 por categoría y 5 por mesa
+APROBADO · Cuatro mesas con colisionadores y cuatro botes sin techo
+APROBADO · Reinicio distinto, mezcla garantizada y sin solapamientos
+APROBADO · Las veinte piezas se asientan físicamente sobre las mesas
+APROBADO · Gravedad, rebote y reposo sobre suelo
+APROBADO · El cubo se desliza, gira y pierde velocidad por contacto con el piso
+APROBADO · Choque real entre piezas transmite impulso
+APROBADO · Agarrar bloquea doble selección y libera con cuerpo dinámico
+APROBADO · Recuperar una pieza caída conserva inventario y puntuación
+APROBADO · Tres depósitos erróneos: exactamente 3 errores / 3 intentos
+APROBADO · No cuenta borde, vuelo ni entrada sin trayectoria por boca
+APROBADO · 20 depósitos correctos reales, sin duplicados, cinco por bote
+APROBADO · Tiempos por bote desde inicio y cronómetro final detenido
+APROBADO · Precisión verificada y pausa no suma tiempo
+APROBADO · Clasificados no se pueden agarrar
+APROBADO · Reiniciar restaura estados y no crea bodies huérfanos
+
+21/21 pruebas aprobadas. WebGL: 2.
+NO PROBADO EN VISOR: tracking real, ergonomía, frecuencia XR y audio espacial.
