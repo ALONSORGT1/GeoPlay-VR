@@ -17,10 +17,10 @@ export async function initLab() {
   const camera=new THREE.PerspectiveCamera(56,1,.025,35);
   function desktopCamera(view='overview') {
     if(view==='front'){camera.position.set(0,1.65,.1);camera.lookAt(0,1,-1.4);}
-    else {camera.position.set(2.25,2.55,3.55);camera.lookAt(0,1.12,-.9);}
+    else {camera.position.set(.55,2.25,3.65);camera.lookAt(0,1.12,-1.65);}
   }
   desktopCamera();
-  const world=createPhysics(),{bins,occluders}=await createEnvironment(scene,world),items=createPieces(world,scene);
+  const world=createPhysics(),{bins,occluders,board}=await createEnvironment(scene,world),items=createPieces(world,scene);
   const game=new Game((type,item)=>{
     feedbackSound(type);
     if(item){item.malla.material.emissive.set(type==='error'?'#e75454':'#5cebc0');item.malla.material.emissiveIntensity=.45;}
@@ -44,7 +44,7 @@ export async function initLab() {
   }
   const start=()=>{unlockAudio();game.start();hud.update(game);};
   const exit=()=>renderer.xr.getSession()?.end().catch(showError);
-  const hud=createHUD(scene,{start,reset,recover,exit},()=>interaction?.inputStatus() || '');
+  const hud=createHUD(scene,board,{start,reset,recover,exit},()=>interaction?.inputStatus() || '');
   interaction=createInteraction({scene,renderer,camera,items,bins,buttons:hud.buttons,occluders,game,canvas:renderer.domElement});reset();
   const vr=VRButton.createButton(renderer,{optionalFeatures:['hand-tracking']});document.getElementById('vr-entry').appendChild(vr);
   renderer.xr.addEventListener('sessionstart',()=>{

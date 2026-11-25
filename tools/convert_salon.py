@@ -1,6 +1,6 @@
 """Convert this SketchUp COLLADA export to a metre-based GLB. Requires numpy and Pillow.
 
-python tools/convert_salon.py ../../salon.dae assets/salon.glb
+python tools/convert_salon.py ../../salon.dae assets/salon.glb <folder-with-classroom-photos>
 """
 from collections import defaultdict
 from io import BytesIO
@@ -12,10 +12,52 @@ import sys
 import xml.etree.ElementTree as ET
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFilter, ImageOps, ImageStat
 
 
-def convert(source, output):
+def classroom_finishes(folder, output):
+    def photo(name):
+        with Image.open(folder / name) as original:
+            return ImageOps.exif_transpose(original).convert("RGB")
+
+    def tile(image, box):
+        quarter = image.crop(box).resize((256, 256), Image.Resampling.LANCZOS)
+        # Remove the photographed light gradient before repeating the material in 3D.
+        detail = np.asarray(quarter, dtype=float) - np.asarray(quarter.filter(ImageFilter.GaussianBlur(18)))
+        quarter = Image.fromarray(np.clip(detail + ImageStat.Stat(quarter).median, 0, 255).astype("uint8"))
+        upper = Image.new("RGB", (512, 256))
+        upper.paste(quarter)
+        upper.paste(ImageOps.mirror(quarter), (256, 0))
+        full = Image.new("RGB", (512, 512))
+        full.paste(upper)
+        full.paste(ImageOps.flip(upper), (0, 256))
+        return full
+
+    plaster = tile(photo("pared2.jpg"), (600, 800, 2200, 2400))
+    stipple = tile(photo("pared.jpg"), (500, 600, 1800, 1900))
+    walls = Image.blend(plaster, stipple, .32)
+    floor = tile(photo("piso.jpg"), (400, 230, 1500, 1330))
+    grout = ImageDraw.Draw(floor)
+    grout.rectangle((0, 0, 511, 7), fill=(132, 123, 117))
+    grout.rectangle((0, 0, 2, 511), fill=(141, 131, 123))
+    door = photo("puerta.jpg")
+    paint = ImageStat.Stat(door.crop((600, 3100, 1450, 3600))).median
+
+    # Rectify the original photographed badge and isolate its blue/silver silhouette.
+    scale = door.width / 450
+    transform = tuple(v * scale for v in (.289, .022, 102, .0095, .385, 132))
+    plate = door.transform((530, 307), Image.Transform.AFFINE, transform, Image.Resampling.BICUBIC)
+    mask = Image.new("L", plate.size)
+    outline = ImageDraw.Draw(mask)
+    outline.rounded_rectangle((148, 42, 520, 257), radius=62, fill=255)
+    outline.ellipse((5, 3, 288, 292), fill=255)
+    plate.putalpha(mask)
+    plate.resize((384, 222), Image.Resampling.LANCZOS).save(output.with_name("placa-y8.png"), optimize=True)
+    return walls, floor, paint
+
+
+def convert(source, output, photos=None):
+    walls, floor, paint = classroom_finishes(photos, output) if photos else (None, None, None)
     root = ET.parse(source).getroot()
     for element in root.iter():
         element.tag = element.tag.split("}")[-1]
@@ -47,6 +89,10 @@ def convert(source, output):
         effect = ids[mat.find("instance_effect").get("url")[1:]]
         name = mat.get("name")
         colors = list(map(float, effect.findtext(".//diffuse/color", "1 1 1 1").split()))
+        if name == "Aula_Madera_Cafe" and paint:
+            colors[:3] = [v / 255 for v in paint]
+        if name == "Aula_Aluminio_Grafito":
+            colors[:3] = [v / 255 for v in (180, 184, 186)]
         # SketchUp diffuse swatches use sRGB. glTF baseColorFactor uses linear RGB.
         colors[:3] = [v / 12.92 if v <= .04045 else ((v + .055) / 1.055)**2.4 for v in colors[:3]]
         pbr = dict(baseColorFactor=colors, roughnessFactor=.84, metallicFactor=0)
@@ -55,16 +101,22 @@ def convert(source, output):
             material.update(alphaMode="BLEND")
             pbr.update(roughnessFactor=.18)
         if "Aluminio" in name:
-            pbr.update(roughnessFactor=.42, metallicFactor=.45)
+            pbr.update(roughnessFactor=.48, metallicFactor=.28)
         texture_id = effect.findtext(".//surface/init_from")
         if texture_id:
             path = source.parent / ids[texture_id].findtext("init_from")
-            with Image.open(path) as image:
-                image.thumbnail((512, 512), Image.Resampling.LANCZOS)
-                stream = BytesIO()
-                image.save(stream, image.format, optimize=True)
+            finish = {"Aula_Muro_Hueso_Texturizado": walls, "Aula_Piso_Cafe_Cuadriculado": floor}.get(name)
+            stream = BytesIO()
+            if finish is not None:
+                finish.save(stream, "JPEG", quality=90, optimize=True)
+                mime = "image/jpeg"
+            else:
+                with Image.open(path) as image:
+                    image.thumbnail((512, 512), Image.Resampling.LANCZOS)
+                    image.save(stream, image.format, optimize=True)
+                    mime = Image.MIME[image.format]
             idx = len(gltf["images"])
-            gltf["images"].append(dict(mimeType=Image.MIME[image.format], bufferView=view(stream.getvalue())))
+            gltf["images"].append(dict(mimeType=mime, bufferView=view(stream.getvalue())))
             gltf["textures"].append(dict(source=idx))
             pbr.update(baseColorTexture={"index": idx})
         materials[mat.get("id")] = len(gltf["materials"])

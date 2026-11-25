@@ -49,7 +49,10 @@ export function createInteraction({scene,renderer,camera,items,bins=[],buttons,o
   function hitFrom(holder) {
     holder.updateWorldMatrix(true,false);mat.extractRotation(holder.matrixWorld);
     raycaster.ray.origin.setFromMatrixPosition(holder.matrixWorld);raycaster.ray.direction.set(0,0,-1).applyMatrix4(mat);
-    raycaster.far=3;return raycaster.intersectObjects(objects,false)[0];
+    // Board controls can be selected across the room. A nearer object still occludes the ray.
+    raycaster.far=12;
+    const hit=raycaster.intersectObjects(objects,false)[0];
+    if(hit && (hit.distance<=3 || hit.object.userData.action)) return hit;
   }
   const xrInput=createXRInput({scene,hitFrom,press,release});
   renderer.xr.addEventListener('sessionstart',()=>xrInput.attach(renderer.xr.getSession()));
@@ -94,7 +97,7 @@ export function createInteraction({scene,renderer,camera,items,bins=[],buttons,o
       state.lastPosition.copy(p);state.lastRotation.copy(q);
     }
   }
-  return {update,press,release,inputStatus:xrInput.status,releaseAll(){
+  return {update,press,release,hitFrom,inputStatus:xrInput.status,releaseAll(){
     for(const state of [...xrInput.sources.values(),desktop]) release(state,true);
   }};
 }

@@ -1,17 +1,20 @@
 """Espera la publicación actual y compara módulos públicos con los archivos locales."""
 import pathlib, urllib.request, json, time, subprocess, hashlib, sys
 root=pathlib.Path(__file__).resolve().parent.parent
-site='https://alonsorgt1.github.io/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3/'
-repo='https://api.github.com/repos/ALONSORGT1/Laboratorio-inmersivo-de-clasificaci-n-geom-trica-con-gravedad-y-colisiones-Meta-Quest-3'
+site='https://alonsorgt1.github.io/GeoPlay-VR/'
+repo='https://api.github.com/repos/ALONSORGT1/GeoPlay-VR'
 sha=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
-files=['index.html','js/main.js','js/physics.js','js/game.js','js/interaction.js','tests/suite.js','css/style.css','assets/favicon.svg']
-def digest(data):return hashlib.sha256(data.replace(b'\r\n',b'\n')).hexdigest()
+files=['index.html','js/main.js','js/physics.js','js/game.js','js/interaction.js','tests/suite.js','css/style.css','assets/favicon.svg','assets/salon.glb','assets/placa-y8.png','js/environment.js','js/hud.js','README.md']
+def digest(data,path):
+    if path.endswith(('.js','.html','.css','.svg','.md')):
+        data=data.replace(b'\r\n',b'\n')
+    return hashlib.sha256(data).hexdigest()
 for attempt in range(30):
     matches=[]
     for f in files:
         try:
             response=urllib.request.urlopen(site+f,timeout=15)
-            matches.append({'path':f,'http':response.status,'hashMatches':digest(response.read())==digest((root/f).read_bytes())})
+            matches.append({'path':f,'http':response.status,'hashMatches':digest(response.read(),f)==digest((root/f).read_bytes(),f)})
         except Exception as e:matches.append({'path':f,'error':str(e),'hashMatches':False})
     if all(m['hashMatches'] for m in matches):break
     if attempt==0:print('Esperando módulos de la versión publicada...',flush=True)

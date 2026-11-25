@@ -10,10 +10,25 @@ export function label(text,width=.7,height=.11,color='#183b4e',bg='#f5f1e8') {
   return new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
 }
 export async function createEnvironment(scene,world) {
-  const {scene: model} = await new GLTFLoader().loadAsync(new URL('../assets/salon.glb', import.meta.url).href);
+  const [{scene: model}, plateMap] = await Promise.all([
+    new GLTFLoader().loadAsync(new URL('../assets/salon.glb', import.meta.url).href),
+    new THREE.TextureLoader().loadAsync(new URL('../assets/placa-y8.png', import.meta.url).href)
+  ]);
   scene.add(model);
   const room = model.getObjectByName('Salon');
   const {solids, floorSize} = room.userData;
+  const board = solids.find(s=>s.name==='pizarron_sur');
+  const lintel = solids.find(s=>s.name==='remate_madera_puerta');
+  const upperDoor = solids.find(s=>s.name==='puerta_oeste' && s.max[1]===lintel.min[1] && s.min[1]>0);
+  plateMap.colorSpace=THREE.SRGBColorSpace;
+  plateMap.anisotropy=4;
+  const plate=new THREE.Mesh(new THREE.PlaneGeometry(.48,.278),
+    new THREE.MeshStandardMaterial({map:plateMap,alphaTest:.45,roughness:.75}));
+  plate.name='Placa Y-8';
+  plate.rotation.y=-Math.PI/2;
+  plate.position.set(upperDoor.min[0]-.001,(upperDoor.min[1]+upperDoor.max[1])/2,(upperDoor.min[2]+upperDoor.max[2])/2);
+  plate.receiveShadow=true;
+  scene.add(plate);
   const bins = [], occluders = [];
   room.traverse(mesh => {
     if (!mesh.isMesh) return;
@@ -76,5 +91,5 @@ export async function createEnvironment(scene,world) {
     number.position.copy(stationPoint(index,0,tableTop-topThickness/2,.687));number.rotation.y=s.angle;scene.add(number);
     bins.push({index,category:cat.id});
   });
-  return {bins,occluders};
+  return {bins,occluders,board};
 }

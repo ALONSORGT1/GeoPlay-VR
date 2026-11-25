@@ -16,7 +16,7 @@ export function runTests({world,items,bins,game,reset,interaction,renderer,hud,r
     const bin=bins.find(b=>b.category===item.categoria);
     const map=hud.panel.material.map;
     const ctx=map.image.getContext('2d');
-    const segment=()=>Array.from(ctx.getImageData(412,265,1,1).data).join(',');
+    const segment=()=>Array.from(ctx.getImageData(1160,109,1,1).data).join(',');
     const empty=segment();
     const tick=()=>renderFrame(performance.now());
     hud.buttons[0].userData.action();
@@ -61,13 +61,17 @@ export function runTests({world,items,bins,game,reset,interaction,renderer,hud,r
   check('Las veinte piezas y los cuatro botones son accesibles desde el centro',()=>{
     scene.updateMatrixWorld(true);
     const targets=[...items.map(item=>item.malla),...hud.buttons];
-    const pickable=[...targets,...occluders];
-    const ray=new THREE.Raycaster();
-    ray.far=3;
-    ray.ray.origin.set(0,1.35,0);
+    const board=scene.getObjectByName('Salon').userData.solids.find(part=>part.name==='pizarron_sur');
+    const panelBounds=new THREE.Box3().setFromObject(hud.panel);
+    assert(panelBounds.min.z>board.max[2] && panelBounds.min.z-board.max[2]<.002,'marcador fuera de la superficie');
+    assert(panelBounds.min.x>=board.min[0] && panelBounds.max.x<=board.max[0] &&
+      panelBounds.min.y>=board.min[1] && panelBounds.max.y<=board.max[1],'la proyección rebasa el pizarrón');
+    const holder=new THREE.Object3D(), point=new THREE.Vector3();
+    holder.position.set(0,1.35,0);
     for(const mesh of targets){
-      mesh.getWorldPosition(ray.ray.direction).sub(ray.ray.origin).normalize();
-      assert(ray.intersectObjects(pickable,false)[0]?.object===mesh,'rayo obstruido');
+      const direction=mesh.getWorldPosition(point).sub(holder.position).normalize();
+      holder.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,-1),direction);
+      assert(interaction.hitFrom(holder)?.object===mesh,'rayo obstruido');
     }
   });
   check('Lanzamientos rápidos de las cuatro formas contra vidrio, puerta, mesa, caja y piso',()=>{
