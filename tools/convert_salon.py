@@ -36,6 +36,10 @@ def classroom_finishes(folder, output):
     plaster = tile(photo("pared2.jpg"), (600, 800, 2200, 2400))
     stipple = tile(photo("pared.jpg"), (500, 600, 1800, 1900))
     walls = Image.blend(plaster, stipple, .32)
+    # Match the near-white column paint (sRGB 245), retaining the photographed relief.
+    relief = ImageOps.grayscale(walls)
+    midtone = ImageStat.Stat(relief).median[0]
+    walls = relief.point(lambda value: value - midtone + 240).convert("RGB")
     floor = tile(photo("piso.jpg"), (400, 230, 1500, 1330))
     grout = ImageDraw.Draw(floor)
     grout.rectangle((0, 0, 511, 7), fill=(132, 123, 117))

@@ -7,7 +7,7 @@ APROBADO · 20 cuerpos, 5 por categoría y 5 por mesa
 APROBADO · Cuatro mesas con colisionadores y cuatro botes sin techo
 APROBADO · Reinicio distinto, mezcla garantizada y sin solapamientos
 APROBADO · Las veinte piezas se asientan físicamente sobre las mesas
-APROBADO · Gravedad, rebote y reposo sobre suelo
+APROBADO · Caída libre y reposo de las cuatro formas sin rebotes amplificados
 APROBADO · El cubo se desliza, gira y pierde velocidad por contacto con el piso
 APROBADO · Choque real entre piezas transmite impulso
 APROBADO · Agarrar bloquea doble selección y libera con cuerpo dinámico

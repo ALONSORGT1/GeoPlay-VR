@@ -4,7 +4,9 @@ import { CATEGORIES, SETTINGS, stationPoint, STATIONS, TABLE_SLOTS } from './con
 export function createPhysics() {
   const world=new CANNON.World({gravity:new CANNON.Vec3(0,-9.81,0),allowSleep:true});
   world.solver.iterations=24; world.broadphase=new CANNON.SAPBroadphase(world);
-  world.defaultContactMaterial.friction=.55; world.defaultContactMaterial.restitution=.16;
+  world.defaultContactMaterial.friction=.55;
+  world.defaultContactMaterial.restitution=.035;
+  world.defaultContactMaterial.contactEquationRelaxation=6;
   return world;
 }
 export function addStaticCollider(world,w,h,d,p,angle,meta) {
@@ -23,7 +25,9 @@ export function advancePhysics(world,items,dt,afterStep) {
       if(body.sleepState!==CANNON.Body.SLEEPING)
         speed=Math.max(speed,body.velocity.length()+body.angularVelocity.length()*item.radius);
     }
-    const step=Math.min(remaining,.016/Math.max(1,speed));
+    // Repartir el tiempo evita resolver una penetración con un último paso diminuto.
+    const subdivisions=Math.max(1,Math.ceil(remaining*speed/.016));
+    const step=remaining/subdivisions;
     world.step(step);
     afterStep(step);
     remaining-=step;

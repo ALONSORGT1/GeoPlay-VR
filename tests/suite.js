@@ -119,11 +119,24 @@ export function runTests({world,items,bins,game,reset,interaction,renderer,hud,r
   check('Las veinte piezas se asientan físicamente sobre las mesas',()=>{
     advance(2);for(const p of items){p.cuerpoFisico.updateAABB();assert(Math.abs(p.cuerpoFisico.aabb.lowerBound.y-SETTINGS.tableTop)<.015,`${p.id}: pos=${p.cuerpoFisico.position.toString()}, y=${p.cuerpoFisico.aabb.lowerBound.y}, v=${p.cuerpoFisico.velocity.toString()}`);}
   });
-  check('Gravedad, rebote y reposo sobre suelo',()=>{
+  check('Caída libre y reposo de las cuatro formas sin rebotes amplificados',()=>{
     assert(world.gravity.almostEquals(new CANNON.Vec3(0,-9.81,0)));
     const p=items[0],b=p.cuerpoFisico;place(p,{x:3,y:.8,z:1});const initial=b.position.y;advance(.1);
     assert(Math.abs(initial-b.position.y-.5*9.81*.1**2)<.006,'distancia de caída en 100 ms');
-    let bounce=false;for(let i=0;i<200;i++){world.step(1/120);if(b.velocity.y>.1)bounce=true;}assert(bounce,'no hubo rebote');advance(2);b.updateAABB();assert(b.aabb.lowerBound.y>-.01 && b.aabb.lowerBound.y<.015);
+    for(const [k,category] of CATEGORIES.entries()){
+      const piece=items.find(item=>item.categoria===category.id), body=piece.cuerpoFisico;
+      for(const height of [.15,.80,1.20]){
+        place(piece,{x:2.7,y:height,z:.5+k*.4},.71);
+        let landed=false,peak=0;
+        for(let tick=0;tick<180;tick++) advancePhysics(world,items,1/120,()=>{
+          if(world.contacts.some(c=>(c.bi===body && c.bj.userData?.name==='piso') ||
+            (c.bj===body && c.bi.userData?.name==='piso'))) landed=true;
+          if(landed){body.updateAABB();peak=Math.max(peak,body.aabb.lowerBound.y);}
+        });
+        assert(landed && peak<.005,`${category.name}, caída de ${height} m: rebote de ${peak} m`);
+        assert(Math.abs(body.aabb.lowerBound.y)<.002 && body.velocity.length()<.02,'reposo sobre el piso');
+      }
+    }
   });
   check('El cubo se desliza, gira y pierde velocidad por contacto con el piso',()=>{
     const cube=items.find(p=>p.categoria==='cubo'),b=cube.cuerpoFisico;
