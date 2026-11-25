@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+export const XR_RAY_LENGTH=12;
 
 // Las poses de rayos, empuñaduras y articulaciones usan el mismo local-floor.
 function applyPose(object, pose) {
@@ -53,7 +54,8 @@ export function createXRInput({scene, hitFrom, press, release}) {
     state.down = down;
     if (!down) return release(state);
     const hit = hitFrom(state.ray);
-    if (hit) press(state, hit.object, state.ray);
+    if (hit && (hit.object.userData.action || (hit.object.userData.item && hit.distance<=3)))
+      press(state, hit.object, state.ray);
   }
   function trigger(event) {
     const state = sources.get(event.inputSource);
@@ -123,8 +125,9 @@ export function createXRInput({scene, hitFrom, press, release}) {
         continue;
       }
       const hit = hitFrom(state.ray);
-      const distance = hit?.distance ?? 1.5;
+      const distance = hit?.distance ?? XR_RAY_LENGTH;
       state.beam.scale.z = distance;
+      state.cursor.visible = Boolean(hit);
       state.cursor.position.z = -distance;
     }
   }

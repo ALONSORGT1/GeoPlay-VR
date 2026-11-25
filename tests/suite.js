@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { testXRInput } from './xr-input.js';
+import { testXRInput, testPackedBin } from './xr-input.js';
 import { CATEGORIES, SETTINGS, STATIONS, stationPoint, localPoint } from '../js/config.js';
 import { Game } from '../js/game.js';
 import { advancePhysics, place, sync, updateRecoveryState } from '../js/physics.js';
@@ -74,6 +74,25 @@ export function runTests({world,items,bins,game,reset,interaction,renderer,hud,r
       assert(interaction.hitFrom(holder)?.object===mesh,'rayo obstruido');
     }
   });
+  check('El rayo llega también al texto y a los bordes visibles del pizarrón',()=>{
+    scene.updateMatrixWorld(true);
+    const board=scene.getObjectByName('Salon').userData.solids.find(part=>part.name==='pizarron_sur');
+    const ray=new THREE.Object3D(),forward=new THREE.Vector3(0,0,-1);
+    for(const x of [-.7,0,.7]){
+      ray.position.set(x,1.4,.2);
+      for(const u of [.02,.5,.98]){
+        const target=new THREE.Vector3(THREE.MathUtils.lerp(board.min[0],board.max[0],u),1.7,board.max[2]);
+        ray.quaternion.setFromUnitVectors(forward,target.clone().sub(ray.position).normalize());
+        const hit=interaction.hitFrom(ray);
+        assert(hit && hit.point.distanceTo(target)<.005,'el puntero se cortó antes del pizarrón');
+      }
+    }
+  });
+  reset();game.start();
+  check('El quinto cubo se deposita sobre cuatro ya clasificados con el mando XR',()=>{
+    testPackedBin({world,items,bins,scene,game},assert);
+  });
+  reset();
   check('Lanzamientos rápidos de las cuatro formas contra vidrio, puerta, mesa, caja y piso',()=>{
     const glass=world.bodies.find(b=>b.userData?.name==='ventana_este_sur' && b.shapes[0].halfExtents.x<.004);
     const door=world.bodies.find(b=>b.userData?.name==='puerta_oeste');

@@ -1,8 +1,9 @@
 // Evolución del agarre físico, offset de pose y pinza/raycast de la práctica 3.1.
 import * as THREE from 'three';
-import { createXRInput } from './xr-input.js';
+import { createXRInput, XR_RAY_LENGTH } from './xr-input.js';
 import { unlockAudio } from './audio.js';
 import { aboveOpening } from './game.js';
+import { localPoint, SETTINGS } from './config.js';
 export function createInteraction({scene,renderer,camera,items,bins=[],buttons,occluders,game,canvas}) {
   const raycaster=new THREE.Raycaster(),mat=new THREE.Matrix4(),target=new THREE.Matrix4(),p=new THREE.Vector3(),q=new THREE.Quaternion(),scale=new THREE.Vector3();
   const objects=[...items.map(i=>i.malla),...buttons,...occluders];
@@ -24,7 +25,8 @@ export function createInteraction({scene,renderer,camera,items,bins=[],buttons,o
     const item=state.held,b=item.cuerpoFisico;
     // Control por velocidad de un cuerpo dinámico: equivalente al arrastre, conserva contactos estáticos.
     if(safe) {b.velocity.setZero();b.angularVelocity.setZero();}
-    else {
+    else if(!isDepositing(item) && !b.world?.contacts.some(c=>c.enabled && (c.bi===b || c.bj===b))) {
+      // Free throws inherit hand motion. At the bin or a support, retain the solved body motion.
       b.velocity.setZero();b.angularVelocity.setZero();
       const duration=state.motion.reduce((sum,m)=>sum+m.dt,0);
       for(const sample of state.motion) {
@@ -46,13 +48,19 @@ export function createInteraction({scene,renderer,camera,items,bins=[],buttons,o
     b.wakeUp();item.holder=null;game.released(item,entered);
     state.entered=null;state.held=null;state.holder=null;state.motion=[];
   }
+  function isDepositing(item) {
+    const center=item.cuerpoFisico.position;
+    if(center.y-item.radius>SETTINGS.binTop+SETTINGS.size || center.y+item.radius<SETTINGS.binBottom) return false;
+    return bins.some(bin=>{
+      const p=localPoint(bin.index,center);
+      return Math.abs(p.x)<=SETTINGS.binHalf && Math.abs(p.z+.02)<=SETTINGS.binHalf;
+    });
+  }
   function hitFrom(holder) {
     holder.updateWorldMatrix(true,false);mat.extractRotation(holder.matrixWorld);
     raycaster.ray.origin.setFromMatrixPosition(holder.matrixWorld);raycaster.ray.direction.set(0,0,-1).applyMatrix4(mat);
-    // Board controls can be selected across the room. A nearer object still occludes the ray.
-    raycaster.far=12;
-    const hit=raycaster.intersectObjects(objects,false)[0];
-    if(hit && (hit.distance<=3 || hit.object.userData.action)) return hit;
+    raycaster.far=XR_RAY_LENGTH;
+    return raycaster.intersectObjects(objects,false)[0];
   }
   const xrInput=createXRInput({scene,hitFrom,press,release});
   renderer.xr.addEventListener('sessionstart',()=>xrInput.attach(renderer.xr.getSession()));
@@ -82,10 +90,7 @@ export function createInteraction({scene,renderer,camera,items,bins=[],buttons,o
       state.holder.updateWorldMatrix(true,false);target.multiplyMatrices(state.holder.matrixWorld,state.offset);target.decompose(p,q,scale);
       const distance=p.distanceTo(b.position);
       if(distance>.85 || !Number.isFinite(distance)){release(state,true);continue;}
-      const v=p.clone().sub(b.position).multiplyScalar(24);b.velocity.copy(v);
-      const rot=q.clone().multiply(new THREE.Quaternion().copy(b.quaternion).invert()).normalize();if(rot.w<0)rot.set(-rot.x,-rot.y,-rot.z,-rot.w);
-      const sin=Math.hypot(rot.x,rot.y,rot.z),angle=2*Math.atan2(sin,rot.w),k=sin>1e-6?angle*24/sin:0;
-      b.angularVelocity.set(rot.x*k,rot.y*k,rot.z*k);b.wakeUp();
+      b.wakeUp();
       if(dt>0 && dt<.10) {
         const delta=q.clone().multiply(state.lastRotation.invert()).normalize();
         if(delta.w<0) delta.set(-delta.x,-delta.y,-delta.z,-delta.w);

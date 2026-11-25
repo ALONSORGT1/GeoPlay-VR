@@ -9,7 +9,7 @@ Clasifica veinte figuras en un salón virtual del Instituto Tecnológico de Pach
 ## Cómo jugar
 
 1. Abre el juego y selecciona **Explorar el laboratorio**. En Meta Quest Browser, entra en VR y apunta a **Comenzar** en el pizarrón.
-2. Apunta a una pieza. Aprieta el gatillo del mando o junta el pulgar y el índice para agarrarla. Al soltarla, la pieza conserva el movimiento y el giro de la mano.
+2. Apunta a una pieza. Aprieta el gatillo del mando o junta el pulgar y el índice para agarrarla. En un lanzamiento libre, la pieza hereda el movimiento y el giro de la mano. Al depositarla en un recipiente, conserva la velocidad que permiten el fondo, los bordes y las figuras que ya están dentro.
 3. Deposita la figura por la abertura del recipiente correspondiente. El juego confirma el intento cuando la pieza queda completamente dentro, apoyada y estable durante 0,8 segundos. Cada categoría se completa con cinco aciertos.
 4. Usa **Recuperar** para devolver piezas caídas o incorrectas a una mesa. **Reiniciar** mezcla las veinte piezas y restablece el marcador.
 

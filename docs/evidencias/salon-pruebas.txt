@@ -1,6 +1,8 @@
 APROBADO · El HUD 3D avanza al soltar en la boca y vuelve a cero al reiniciar
 APROBADO · Salón 1:1, piso en Y=0, vanos, trabe y espacio central de interacción
 APROBADO · Las veinte piezas y los cuatro botones son accesibles desde el centro
+APROBADO · El rayo llega también al texto y a los bordes visibles del pizarrón
+APROBADO · El quinto cubo se deposita sobre cuatro ya clasificados con el mando XR
 APROBADO · Lanzamientos rápidos de las cuatro formas contra vidrio, puerta, mesa, caja y piso
 APROBADO · Entradas XR simuladas: gatillo, pinza, cambio de fuente y pérdida de pose
 APROBADO · 20 cuerpos, 5 por categoría y 5 por mesa
@@ -20,5 +22,5 @@ APROBADO · Precisión verificada y pausa no suma tiempo
 APROBADO · Clasificados no se pueden agarrar
 APROBADO · Reiniciar restaura estados y no crea bodies huérfanos
 
-21/21 pruebas aprobadas. WebGL: 2.
+23/23 pruebas aprobadas. WebGL: 2.
 NO PROBADO EN VISOR: tracking real, ergonomía, frecuencia XR y audio espacial.

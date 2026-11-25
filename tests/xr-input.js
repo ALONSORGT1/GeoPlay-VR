@@ -1,7 +1,56 @@
 import * as THREE from 'three';
 import { createInteraction } from '../js/interaction.js';
-import { Game } from '../js/game.js';
-import { createPhysics, createPieces } from '../js/physics.js';
+import { Game, aboveOpening } from '../js/game.js';
+import { createPhysics, createPieces, advancePhysics, place, sync } from '../js/physics.js';
+import { SETTINGS, STATIONS, stationPoint } from '../js/config.js';
+
+// Use the same held-body and release paths as a controller, including contact with a lower layer.
+export function testPackedBin({world,items,bins,scene,game},assert) {
+  const bin=bins.find(b=>b.category==='cubo'), cubes=items.filter(i=>i.categoria==='cubo');
+  const yaw=STATIONS[bin.index].angle;
+  function tick() {
+    advancePhysics(world,items,SETTINGS.step,dt=>{
+      for(const cube of cubes) if(cube.holder && aboveOpening(cube,bin)) cube.holder.entered=bin.index;
+      game.update(dt,items,bins,world.contacts);
+    });
+    sync(items);
+  }
+  for(let i=0;i<4;i++){
+    const cube=cubes[i];
+    place(cube,stationPoint(bin.index,i%2?.045:-.045,1.2,(i<2?-.045:.045)-.02),yaw);
+    game.released(cube);
+    for(let n=0;n<240;n++) tick();
+    assert(cube.estado==='clasificado','capa inferior del recipiente');
+  }
+  const last=cubes[4], b=last.cuerpoFisico;
+  place(last,stationPoint(bin.index,0,1.22,-.02),yaw);
+  const pos={x:b.position.x,y:b.position.y,z:b.position.z+1.3};
+  const top=pos.y, source={targetRayMode:'tracked-pointer',targetRaySpace:{}};
+  const session=Object.assign(new EventTarget(),{inputSources:[source],visibilityState:'visible'});
+  const xr=Object.assign(new THREE.EventDispatcher(),{isPresenting:true,getSession:()=>session,getReferenceSpace:()=>({})});
+  const aim={transform:{position:pos,orientation:{x:0,y:0,z:0,w:1}},linearVelocity:{x:0,y:0,z:0},angularVelocity:{x:0,y:0,z:0}};
+  const frame={getPose:()=>aim};
+  const input=createInteraction({scene,renderer:{xr},camera:new THREE.PerspectiveCamera(),items,bins,
+    occluders:[],buttons:[],game,canvas:document.createElement('canvas')});
+  const select=type=>session.dispatchEvent(Object.assign(new Event(type),{inputSource:source,frame}));
+  xr.dispatchEvent({type:'sessionstart'});
+  try {
+    scene.updateMatrixWorld(true);input.update(1/60,frame);select('selectstart');
+    assert(last.holder,'selección del quinto cubo');
+    for(let n=0;n<100;n++){
+      pos.y=Math.max(SETTINGS.binBottom,top-n*.008);
+      input.update(1/60,frame);tick();tick();
+    }
+    // A wrist turn over a 1.3 m ray must not propel a cube resting on the other four.
+    aim.angularVelocity.x=3.2;
+    const height=b.position.y;
+    select('selectend');
+    let peak=height;
+    for(let n=0;n<360;n++){tick();peak=Math.max(peak,b.position.y);}
+    assert(peak-height<.02,`el quinto cubo se elevó ${(peak-height).toFixed(3)} m al soltar`);
+    assert(game.counts.cubo===5 && cubes.every(c=>game.inside(c,bin)),'cinco cubos dentro y contados');
+  } finally {xr.dispatchEvent({type:'sessionend'});}
+}
 
 export function testXRInput(assert) {
   const scene = new THREE.Scene();

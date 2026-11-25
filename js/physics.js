@@ -15,6 +15,23 @@ export function addStaticCollider(world,w,h,d,p,angle,meta) {
   body.aabbNeedsUpdate=true; body.userData=meta; world.addBody(body);
   return body;
 }
+const gripDelta=new THREE.Vector3(), gripRotation=new THREE.Quaternion();
+// Limit the acceleration supplied by the hand so a blocked target cannot drive through a stack.
+function followGrip(item,step) {
+  const b=item.cuerpoFisico, grip=item.holder;
+  const response=1-Math.exp(-30*step);
+  gripDelta.copy(grip.lastPosition).sub(b.position).multiplyScalar(22).sub(b.velocity)
+    .multiplyScalar(response).clampLength(0,30*step);
+  b.velocity.vadd(gripDelta,b.velocity);
+  b.velocity.y-=b.world.gravity.y*step;
+  gripRotation.copy(b.quaternion).invert().premultiply(grip.lastRotation).normalize();
+  if(gripRotation.w<0) gripRotation.set(-gripRotation.x,-gripRotation.y,-gripRotation.z,-gripRotation.w);
+  gripDelta.set(gripRotation.x,gripRotation.y,gripRotation.z);
+  const sine=gripDelta.length();
+  if(sine>0) gripDelta.multiplyScalar(22*2*Math.atan2(sine,gripRotation.w)/sine);
+  gripDelta.sub(b.angularVelocity).multiplyScalar(response).clampLength(0,100*step);
+  b.angularVelocity.vadd(gripDelta,b.angularVelocity);
+}
 // Bound travel of the fastest surface (including rotation) before testing contacts again.
 export function advancePhysics(world,items,dt,afterStep) {
   let remaining=dt;
@@ -28,6 +45,7 @@ export function advancePhysics(world,items,dt,afterStep) {
     // Repartir el tiempo evita resolver una penetración con un último paso diminuto.
     const subdivisions=Math.max(1,Math.ceil(remaining*speed/.016));
     const step=remaining/subdivisions;
+    for(const item of items) if(item.holder) followGrip(item,step);
     world.step(step);
     afterStep(step);
     remaining-=step;
