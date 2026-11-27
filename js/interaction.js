@@ -11,7 +11,8 @@ export function createInteraction({scene,renderer,camera,items,bins=[],buttons,o
     unlockAudio();
     if(object.userData.action) {object.userData.action();return;}
     const item=object.userData.item;
-    if(!item || item.holder || item.estado==='clasificado' || state.held || game.status!=='jugando')return;
+    // 'sincronizando': depósito enviado y aún sin confirmar; no se puede mover hasta la respuesta.
+    if(!item || item.holder || ['clasificado','sincronizando'].includes(item.estado) || state.held || game.status!=='jugando')return;
     holder.updateWorldMatrix(true,false);item.malla.updateWorldMatrix(true,false);
     state.offset=new THREE.Matrix4().copy(holder.matrixWorld).invert().multiply(item.malla.matrixWorld);
     state.lastPosition=item.malla.getWorldPosition(new THREE.Vector3());

@@ -29,4 +29,31 @@ La simulación aplica gravedad de 9,81 m/s², colisionadores derivados del saló
 
 El salón listo para el navegador está en `assets/salon.glb`. Para regenerarlo y extraer la placa, instala NumPy y Pillow y ejecuta `python tools/convert_salon.py ruta/salon.dae assets/salon.glb ruta/fotografias`. El DAE requiere sus texturas de SketchUp junto al archivo. La carpeta de fotografías debe contener `pared.jpg`, `pared2.jpg`, `piso.jpg` y `puerta.jpg`.
 
+## Práctica 3.3 · Sincronización con el servidor
+
+En la rama `practica-3-3`, el aula registra cada intento en MySQL/RDS a través del backend (Vercel → EC2/FastAPI). El modelo de SketchUp, las mesas, los recipientes, la física, la pinza, el seguimiento de manos y el HUD **no cambian**.
+
+- **Códigos**: `ESF-01…05`, `CUB-01…05`, `PIR-01…05` y `HEX-01…05` (`item.codigo`). Los contenedores son 1 = esferas, 2 = cubos, 3 = pirámides y 4 = prismas hexagonales (`CATEGORIES[].contenedor`).
+- **Comenzar** hace `POST /intentos`. El id y el token se guardan **solo en memoria**: no van a localStorage, cookies ni URL.
+- Cuando una pieza se **estabiliza dentro de un recipiente después de soltarla**, se envía una sola clasificación `{codigo, id_contenedor, clave_evento}` con `crypto.randomUUID()`. Cada reintento usa el mismo UUID. No se envían frames ni posiciones de manos.
+- El **servidor decide** acierto o error. Mientras tanto la pieza queda en amarillo (`sincronizando`) y no se puede agarrar. El marcador del pizarrón y de la página solo cambia con datos confirmados: el evento y luego el resumen `GET /dashboard`.
+- **Cola serial** con reintentos de espera creciente (1 s, 2 s… hasta 30 s, con jitter). El HUD muestra "confirmando", "error de sincronización · reintento en N s" o "sesión perdida".
+- Con **20/20 confirmados** se llama a `PUT /finalizar`. **Reiniciar** queda bloqueado mientras haya pendientes; si el intento sigue activo, hace `PUT /cancelar`. Al cerrar la pestaña se cancela en modo *best effort* (`keepalive`).
+- Si el servidor responde 401, 403 o 404, se avisa de que **la sesión se perdió**, se pausa la partida y se pide Reiniciar.
+
+`js/config.js` → `API_CONFIG`. En `localhost`/`127.0.0.1` se usa `http://127.0.0.1:8000/api`. En otro host se usa `https://PROYECTO.vercel.app/api`, que debes **sustituir**. `?api=prod` fuerza producción y `?api=off` juega sin servidor.
+
+### Pruebas 3.3
+- Cola de sincronización (Node ≥ 18):
+
+```powershell
+node --test tests/api.test.mjs
+```
+
+- Extremo a extremo con física real, que requiere el backend local: abre `http://127.0.0.1:5501/?synctest=1&autorun=1` (o el puerto de tu Live Server).
+- Regresión 3.2: `?test=1&autorun=1`, que puntúa localmente sin servidor.
+- Resultados: [docs/evidencias/sincronizacion-3.3.txt](docs/evidencias/sincronizacion-3.3.txt).
+
+El origen local del aula (p. ej. `http://127.0.0.1:5501`) debe estar en `ALLOWED_ORIGINS` del backend. Para GitHub Pages, el origen es `https://alonsorgt1.github.io`.
+
 **Autor:** Alonso Ramírez Gutiérrez · Instituto Tecnológico de Pachuca.

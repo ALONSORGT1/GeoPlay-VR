@@ -11,11 +11,19 @@ export function aboveOpening(item,bin) {
   return body.aabb.upperBound.y>=openingHeight;
 }
 export class Game {
-  constructor(feedback = () => {}) { this.feedback = feedback; this.reset(); }
+  constructor(feedback = () => {}) {
+    this.feedback = feedback;
+    // Práctica 3.3: si existe, cada depósito estable se envía al servidor y el marcador
+    // solo cambia con lo confirmado por RDS. Sin él (modo pruebas/offline) se puntúa localmente.
+    this.onDeposit = null;
+    this.syncText = '';
+    this.reset();
+  }
   reset() {
     this.status='preparado'; this.elapsed=0; this.hits=0; this.errors=0; this.attempts=0;
     this.counts=Object.fromEntries(CATEGORIES.map(c=>[c.id,0]));
     this.times=Object.fromEntries(CATEGORIES.map(c=>[c.id,null])); this.message='Pulsa Comenzar para iniciar';
+    this.eventosConfirmados=new Set();
   }
   start() { if (['preparado','pausado'].includes(this.status)) { this.status='jugando'; this.message='Apunta · pellizca · mueve · suelta'; } }
   pause() { if(this.status==='jugando') { this.status='pausado'; this.message='En pausa · pulsa Comenzar para continuar'; } }
@@ -65,6 +73,14 @@ export class Game {
   }
   confirm(item,bin) {
     if(item.confirmed || item.estado==='clasificado') return;
+    if(this.onDeposit) {
+      // Una sola clasificación por depósito estable; el servidor decide acierto o error.
+      item.confirmed=true; item.estado='sincronizando'; item.recipiente=bin.index;
+      item.malla.material.emissive.set('#f2c14e'); item.malla.material.emissiveIntensity=.35;
+      this.message='Depósito detectado · confirmando con el servidor…';
+      this.onDeposit(item,bin);
+      return;
+    }
     item.confirmed=true; this.attempts++;
     const correct=item.categoria===bin.category;
     item.eventos.push({ intento:item.attempt, recipiente:bin.index, correcto:correct, tiempo:this.elapsed });
@@ -75,5 +91,40 @@ export class Game {
       this.message=`¡Correcto! ${this.hits} de 20`; this.feedback('correct',item,bin);
       if(this.hits===20) { this.status='completado'; this.message='¡Laboratorio completado!'; this.feedback('complete'); }
     } else { item.estado='error'; this.errors++; this.message='Recipiente incorrecto · retira la pieza y vuelve a intentar'; this.feedback('error',item,bin); }
+  }
+
+  /** Resultado confirmado por RDS para un depósito enviado (evento de vw_historico_eventos). */
+  applyServerEvent(item,evento) {
+    if(this.eventosConfirmados.has(evento.id_evento)) return; // retransmisión idempotente: no suma
+    this.eventosConfirmados.add(evento.id_evento);
+    const bin={index:item.recipiente};
+    item.eventos.push({ intento:item.attempt, recipiente:item.recipiente, correcto:evento.es_correcto,
+      tiempo:evento.tiempo_transcurrido_ms/1000, id_evento:evento.id_evento });
+    this.attempts++;
+    if(evento.es_correcto) {
+      item.estado='clasificado'; this.hits++; this.counts[item.categoria]++;
+      if(this.counts[item.categoria]===5 && this.times[item.categoria]==null) this.times[item.categoria]=evento.tiempo_transcurrido_ms/1000;
+      this.message=`¡Correcto! ${this.hits} de 20 · confirmado`; this.feedback('correct',item,bin);
+    } else {
+      item.estado='error'; this.errors++;
+      this.message='Recipiente incorrecto (confirmado) · retira la pieza y vuelve a intentar'; this.feedback('error',item,bin);
+    }
+    this.checkComplete();
+  }
+  /** Sustituye los contadores por el resumen de RDS (fuente de verdad). */
+  applyServerSummary({resumen,contenedores}) {
+    if(!resumen) return;
+    this.hits=resumen.aciertos; this.errors=resumen.errores; this.attempts=resumen.aciertos+resumen.errores;
+    for(const c of contenedores||[]) {
+      const cat=CATEGORIES.find(k=>k.contenedor===c.id_contenedor); if(!cat) continue;
+      this.counts[cat.id]=c.aciertos;
+      this.times[cat.id]=c.tiempo_finalizacion_ms==null?null:c.tiempo_finalizacion_ms/1000;
+    }
+    this.checkComplete();
+  }
+  checkComplete() {
+    if(this.hits===20 && this.status!=='completado') {
+      this.status='completado'; this.message='¡Laboratorio completado! Registrando en el servidor…'; this.feedback('complete');
+    }
   }
 }

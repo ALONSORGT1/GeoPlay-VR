@@ -5,4 +5,4 @@ document.getElementById('preview').addEventListener('click',async()=>{
   ready=true;
   try {const {initLab}=await import('./main.js');await initLab();} catch(error){console.error(error);document.getElementById('loading').textContent='No se pudo cargar el laboratorio. Verifica la conexión a los CDN y recarga.';document.getElementById('error').hidden=false;document.getElementById('error').textContent=error.message;ready=false;}
 });
-if(new URLSearchParams(location.search).has('test')) document.getElementById('preview').click();
+{const q=new URLSearchParams(location.search);if(q.has('test')||q.has('synctest')) document.getElementById('preview').click();}

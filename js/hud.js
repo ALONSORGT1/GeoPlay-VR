@@ -39,7 +39,7 @@ export function createHUD(scene,board,actions,inputStatus) {
   let signature='';
   function update(game) {
     const input=inputStatus(), remaining=20-game.hits;
-    const key=JSON.stringify([input,game.status,Math.floor(game.elapsed),game.counts,game.times,game.attempts,game.hits,game.errors,game.message]);
+    const key=JSON.stringify([input,game.status,Math.floor(game.elapsed),game.counts,game.times,game.attempts,game.hits,game.errors,game.message,game.syncText]);
     if(signature===key)return;
     signature=key;
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -63,7 +63,9 @@ export function createHUD(scene,board,actions,inputStatus) {
       text(game.times[category.id]===null?'Pendiente':timeText(game.times[category.id]),1535,y,29);
     });
     text(game.message,46,353,33,600);
-    text(`${game.attempts} intentos   ·   ${game.errors} errores${input?'   ·   '+input:''}`,46,401,28);
+    text(`${game.attempts} intentos   ·   ${game.errors} errores${input?'   ·   '+input:''}`,46,401,28,500,'#203847',860);
+    // Práctica 3.3: estado de sincronización con el servidor (pendiente, error, sesión perdida).
+    if(game.syncText) text(game.syncText,930,401,26,600,/error|perdida|No se/.test(game.syncText)?'#b3261e':'#205957',830);
     controls.forEach(([caption],i)=>{
       const x=buttonX(i);
       ctx.fillStyle=i===0?'#205957':'#d7e1e1';
@@ -73,6 +75,7 @@ export function createHUD(scene,board,actions,inputStatus) {
     });
     tex.needsUpdate=true;
     document.getElementById('score').textContent=`${game.hits}/20 · Faltan ${remaining} · ${game.errors} errores · ${game.accuracy.toFixed(0)} % · ${timeText(game.elapsed)} · ${game.status}`;
+    const sync=document.getElementById('sync'); if(sync && sync.textContent!==game.syncText) sync.textContent=game.syncText;
     document.getElementById('feedback').textContent=game.message;
   }
   return {group,panel,buttons,update};

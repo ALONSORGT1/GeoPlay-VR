@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { Body } from 'cannon-es';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
-import { SETTINGS, STATIONS, stationPoint, TABLE_SLOTS } from './config.js';
+import { SETTINGS, STATIONS, stationPoint, TABLE_SLOTS, CATEGORIES, API_CONFIG } from './config.js';
+import { ApiClient, SyncSession } from './api.js';
 import { advancePhysics, createPhysics, createPieces, redistribute, place, sync, updateRecoveryState } from './physics.js';
 import { createEnvironment } from './environment.js';
 import { createInteraction } from './interaction.js';
@@ -26,7 +27,51 @@ export async function initLab() {
     if(item){item.malla.material.emissive.set(type==='error'?'#e75454':'#5cebc0');item.malla.material.emissiveIntensity=.45;}
   });
   let interaction;
-  function reset(){interaction?.releaseAll();game.reset();redistribute(items);hud.update(game);}
+  const params=new URLSearchParams(location.search);
+  // La suite física de la 3.2 (?test) puntúa localmente; en uso normal se sincroniza con el backend.
+  const session=API_CONFIG.enabled && !params.has('test') ? createSession() : null;
+  let resetting=false;
+  function createSession() {
+    let finishing=false;
+    const s=new SyncSession(new ApiClient(API_CONFIG.API_BASE),{
+      onConfirmed:(evento,tarea)=>{game.applyServerEvent(tarea.meta.item,evento);finish();},
+      onSummary:d=>{game.applyServerSummary(d);finish();},
+      onRejected:(error,tarea)=>{
+        const item=tarea.meta.item;
+        if(error.codigo==='objeto_ya_clasificado'){item.estado='clasificado';item.malla.material.emissive.set('#5cebc0');s.refrescar();}
+        else {item.estado='error';item.malla.material.emissive.set('#e75454');}
+        game.message=`El servidor no registró ${item.codigo}: ${error.message}`;
+      },
+      onFinished:(resumen,tipo)=>{
+        if(tipo==='finalizar') game.message=`¡Laboratorio completado! Intento #${s.id} registrado en el servidor`;
+      },
+      onLost:(error,descartadas)=>{
+        for(const t of descartadas) if(t.meta?.item?.estado==='sincronizando'){t.meta.item.estado='error';t.meta.item.malla.material.emissive.set('#e75454');}
+        interaction?.releaseAll();game.pause();
+        game.message='Se perdió la sesión con el servidor. Los depósitos sin confirmar no cuentan. Pulsa Reiniciar.';
+        showError(new Error(`sesión del intento perdida (${error.message})`));
+      },
+    });
+    function finish(){ if(game.hits===20 && s.activo && !finishing){finishing=true;s.finalizar().catch(()=>{}).finally(()=>{finishing=false;});} }
+    return s;
+  }
+  async function reset(){
+    if(resetting) return;
+    if(session) {
+      if(session.pendientes>0){
+        game.message=`Reinicio bloqueado: ${session.pendientes} evento(s) pendientes de confirmar`;hud.update(game);session.reintentarYa();return;
+      }
+      if(session.activo){
+        resetting=true;interaction?.releaseAll();game.pause();
+        game.message='Cancelando el intento en el servidor…';hud.update(game);
+        try{await session.cancelar();}catch{/* sesión perdida: ya no hay nada que cancelar */}
+        finally{resetting=false;}
+        if(session.activo){game.message='No se pudo cancelar: comprueba la conexión y pulsa Reiniciar de nuevo';hud.update(game);return;}
+      }
+      session.reset();
+    }
+    interaction?.releaseAll();game.reset();redistribute(items);hud.update(game);
+  }
   function recover(){
     const obstacles=items.filter(i=>i.estado!=='recuperable' && i.estado!=='error');let recovered=0;
     for(const item of items) {
@@ -42,10 +87,28 @@ export async function initLab() {
     }
     game.message=recovered?`${recovered} pieza(s) recuperada(s) · sin cambiar puntuación`:'No hay piezas caídas o erróneas para recuperar';hud.update(game);
   }
-  const start=()=>{unlockAudio();game.start();hud.update(game);};
+  async function start(){
+    unlockAudio();
+    if(session && !session.activo){
+      if(resetting || session.estado==='iniciando') return;
+      if(game.status==='completado' || session.estado!=='inactivo'){game.message='Pulsa Reiniciar para comenzar un intento nuevo';hud.update(game);return;}
+      game.message='Creando el intento en el servidor…';hud.update(game);
+      try{await session.iniciar();}
+      catch(error){game.message=`No se pudo crear el intento (${error.message}). Pulsa Comenzar para reintentar.`;hud.update(game);return;}
+    }
+    game.start();hud.update(game);
+  }
   const exit=()=>renderer.xr.getSession()?.end().catch(showError);
   const hud=createHUD(scene,board,{start,reset,recover,exit},()=>interaction?.inputStatus() || '');
   interaction=createInteraction({scene,renderer,camera,items,bins,buttons:hud.buttons,occluders,game,canvas:renderer.domElement});reset();
+  if(session){
+    // Un depósito estable → una clasificación (código + contenedor). Nada por frame ni posiciones de manos.
+    game.onDeposit=(item,bin)=>session.clasificar(item.codigo,CATEGORIES.find(c=>c.id===bin.category).contenedor,{item});
+    window.addEventListener('online',()=>session.reintentarYa());
+    // Abandonar con intento activo → cancelar (best effort, keepalive). Avisar si hay pendientes.
+    window.addEventListener('pagehide',()=>session.cancelarAlSalir());
+    window.addEventListener('beforeunload',e=>{if(session.pendientes>0){e.preventDefault();e.returnValue='';}});
+  }
   const vr=VRButton.createButton(renderer,{optionalFeatures:['hand-tracking']});document.getElementById('vr-entry').appendChild(vr);
   renderer.xr.addEventListener('sessionstart',()=>{
     interaction.releaseAll();camera.position.set(0,0,0);camera.quaternion.identity();document.body.classList.add('in-vr');
@@ -90,6 +153,7 @@ export async function initLab() {
       }
     } else accumulator=0;
     sync(items);
+    if(session) game.syncText=session.describir();
     hud.update(game);
     renderer.render(scene,camera);
   }
@@ -103,7 +167,14 @@ export async function initLab() {
     document.getElementById('run-tests').onclick=()=>runTests({world,items,bins,game,reset,interaction,scene,camera,occluders,renderer,hud,renderFrame});
     if(new URLSearchParams(location.search).has('autorun')) setTimeout(()=>document.getElementById('run-tests').click(),700);
   }
+  // Práctica 3.3: prueba de extremo a extremo contra el backend local (?synctest=1).
+  if(session && params.has('synctest')) {
+    const {runSyncTests}=await import('../tests/sync-suite.js');
+    const button=document.getElementById('run-tests');button.hidden=false;button.textContent='Ejecutar prueba de sincronización';
+    button.onclick=()=>runSyncTests({world,items,bins,game,session,start,reset,interaction});
+    if(params.has('autorun')) setTimeout(()=>button.click(),700);
+  }
   document.getElementById('loading').hidden=true;
-  return {world,items,bins,game,renderer};
+  return {world,items,bins,game,renderer,session,start,reset};
 }
 export function showError(error){console.error(error);const el=document.getElementById('error');el.hidden=false;el.textContent=`No se pudo completar la acción: ${error.message||error}. Comprueba tu conexión y recarga la página.`;}

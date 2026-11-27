@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { CATEGORIES, SETTINGS, stationPoint, STATIONS, TABLE_SLOTS } from './config.js';
+import { CATEGORIES, SETTINGS, stationPoint, STATIONS, TABLE_SLOTS, codigoPieza } from './config.js';
 export function createPhysics() {
   const world=new CANNON.World({gravity:new CANNON.Vec3(0,-9.81,0),allowSleep:true});
   world.solver.iterations=24; world.broadphase=new CANNON.SAPBroadphase(world);
@@ -72,7 +72,7 @@ export function createPieces(world,scene) {
     mesh.castShadow=true; mesh.receiveShadow=true; scene.add(mesh);
     geometries[k].computeBoundingSphere();
     const body=new CANNON.Body({mass:[.14,.12,.075,.11][k],shape:shapes[k](),linearDamping:.035,angularDamping:.3,sleepSpeedLimit:.06,sleepTimeLimit:.7}); world.addBody(body);
-    const item={id:`${category.id}-${n+1}`,categoria:category.id,mesaOrigen:0,malla:mesh,cuerpoFisico:body,estado:'disponible',holder:null,eventos:[],attempt:0,confirmed:false,stable:0,entered:null,radius:geometries[k].boundingSphere.radius};
+    const item={id:`${category.id}-${n+1}`,codigo:codigoPieza(category,n+1),categoria:category.id,mesaOrigen:0,malla:mesh,cuerpoFisico:body,estado:'disponible',holder:null,eventos:[],attempt:0,confirmed:false,stable:0,entered:null,radius:geometries[k].boundingSphere.radius};
     body.userData={item}; mesh.userData.item=item; return item;
   }));
 }

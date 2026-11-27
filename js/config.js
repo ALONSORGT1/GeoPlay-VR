@@ -1,9 +1,22 @@
+// prefijo + contenedor: contrato de la práctica 3.3 (ESF-01…HEX-05; 1=esferas … 4=prismas hexagonales).
 export const CATEGORIES = [
-  { id: 'esfera', name: 'Esferas', symbol: '●', color: '#39b8ac' },
-  { id: 'cubo', name: 'Cubos', symbol: '■', color: '#edac50' },
-  { id: 'piramide', name: 'Pirámides', symbol: '▲', color: '#df7880' },
-  { id: 'prisma', name: 'Prismas hexagonales', symbol: '⬡', color: '#7f91d8' }
+  { id: 'esfera', name: 'Esferas', symbol: '●', color: '#39b8ac', prefijo: 'ESF', contenedor: 1 },
+  { id: 'cubo', name: 'Cubos', symbol: '■', color: '#edac50', prefijo: 'CUB', contenedor: 2 },
+  { id: 'piramide', name: 'Pirámides', symbol: '▲', color: '#df7880', prefijo: 'PIR', contenedor: 3 },
+  { id: 'prisma', name: 'Prismas hexagonales', symbol: '⬡', color: '#7f91d8', prefijo: 'HEX', contenedor: 4 }
 ];
+export const codigoPieza = (category, n) => `${category.prefijo}-${String(n).padStart(2, '0')}`;
+
+// API del backend (sin secretos). >>> SUSTITUYE PROYECTO por tu proyecto de Vercel antes de publicar <<<
+const API_PRODUCCION = 'https://PROYECTO.vercel.app/api';
+const API_LOCAL = 'http://127.0.0.1:8000/api'; // Live Server / serve.py en esta PC
+const esLocal = typeof location !== 'undefined' && ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
+const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
+export const API_CONFIG = Object.freeze({
+  // ?api=prod en local apunta a producción; ?api=off desactiva la sincronización (modo 3.2 sin servidor).
+  API_BASE: esLocal && params.get('api') !== 'prod' ? API_LOCAL : API_PRODUCCION,
+  enabled: params.get('api') !== 'off',
+});
 // Cada estación apunta al origen. Metros, Y arriba; usuario estable en (0,0,0).
 export const STATIONS = [-72, -24, 24, 72].map(deg => {
   const a = deg * Math.PI / 180;
